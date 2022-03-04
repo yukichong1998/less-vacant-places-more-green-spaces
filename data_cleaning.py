@@ -32,26 +32,24 @@ health_data = health_data.astype({"tract_code": str})
 #Although each set has 803 rows, when merged, there are 823 rows. Why?
 
 # Creating summary score of health indicators    
-def create_summary_score(data, metrics, tracts, weights=None):
+def create_summary_score(data, metrics, tracts):
     '''
-    Calculates a summary score given weights selected by the user for
-    each of the four health indicators and the selected tract(s).
+    Given the selected health metrics and tracts, creates a subset of
+    data and a new column for summary score.
 
     Inputs:
         data: a dataframe consisting of one column for each health indicator
                 and a column for tract.
         tracts: list of tracts (str) to filter for
         metrics: list of health indicators (str) to filter for
-        weights: tuple of four int as weights for each column
     '''
     filter_tract = data["tract_code"].isin(tracts)
     cols_to_keep = ["tract_code"] + metrics
     subset = data.loc[filter_tract, cols_to_keep]
+    print("subset:", subset)
 
-    rv = subset.sum(axis=1)
-    return f"summary score = {rv}"
-
-
+    subset["summary_score"] = sum([subset[i] for i in metrics])
+    return subset
 
 
 
