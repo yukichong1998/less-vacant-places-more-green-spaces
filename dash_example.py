@@ -1,15 +1,13 @@
 import pandas as pd
-import plotly.express as px  # (version 4.7.0 or higher)
+import plotly.express as px  
 import plotly.graph_objects as go
-from dash import Dash, dcc, html, Input, Output  # pip install dash (version 2.0.0 or higher)
+from dash import Dash, dcc, html, Input, Output  
 import json
 
 app = Dash(__name__)
 
-# -- Import and clean data (importing csv into pandas)
 df = pd.read_csv("dummy_data.csv")
 
-print(df[:5])
 
 # ------------------------------------------------------------------------------
 # App layout
@@ -30,7 +28,7 @@ app.layout = html.Div([
     html.Div(id='output_container', children=[]),
     html.Br(),
 
-    dcc.Graph(id='my_bee_map', figure={})
+    dcc.Graph(id='chicago_map', figure={})
 
 ])
 
@@ -39,7 +37,7 @@ app.layout = html.Div([
 # Connect the Plotly graphs with Dash Components
 @app.callback(
     [Output(component_id='output_container', component_property='children'),
-     Output(component_id='my_bee_map', component_property='figure')],
+     Output(component_id='chicago_map', component_property='figure')],
     [Input(component_id='slct_year', component_property='value')]
 )
 def update_graph(option_slctd):
@@ -51,13 +49,15 @@ def update_graph(option_slctd):
     with open('Neighborhoods.geojson') as fin:
         neighborhoods = json.load(fin)
 
-    fig = px.choropleth_mapbox(df, geojson=neighborhoods, locations='sec_neigh', featureidkey="properties.sec_neigh", color=option_slctd,
-                           color_continuous_scale="Viridis",
-                           range_color=(0, 12),
-                           mapbox_style="carto-positron",
-                           zoom=9, center = {"lat": 41.8, "lon": -87.7},
-                           opacity=0.5,
-                           labels={'dummy':option_slctd}
+    fig = px.choropleth_mapbox(df, geojson=neighborhoods, locations='sec_neigh', 
+                            featureidkey="properties.sec_neigh", 
+                            color=option_slctd,
+                            color_continuous_scale="Viridis",
+                            range_color=(0, 12),
+                            mapbox_style="carto-positron",
+                            zoom=9, center = {"lat": 41.8, "lon": -87.7},
+                            opacity=0.5,
+                            labels={'dummy':option_slctd}
                           )
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
   
