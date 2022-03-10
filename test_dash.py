@@ -6,37 +6,8 @@ import pandas as pd
 from functools import reduce
 
 #load data
-VAR_NAMES = {
-    "GEOID":"census_tract",
-    "GEOID10":"census_tract",
-    "COMMAREA":"community_area",
-    "AREA_NUMBER":"community_area",
-    "COMMUNITY":"Neighborhood",
-    "HDX_2015-2019":"Hardship Score",
-    }
-CENSUS_TRACT_COLS = ["GEOID10", "COMMAREA"]
-CENSUS_TRACT_FILENAME = 'census_tracts.csv'
-COMM_AREA_COLS = ["AREA_NUMBER", "COMMUNITY"]
-COMM_AREA_FILENAME = 'comm_areas.csv'
-HARDSHIP_COLS = ["GEOID", "HDX_2015-2019"]
-HARDSHIP_FILENAME = 'hardship_index.csv'
-HEALTH_COLS = ["stcotr_fips", "est"]
-
-# Load hardship and health dataframes
-ct_data = dc.load_data(CENSUS_TRACT_FILENAME, CENSUS_TRACT_COLS)
-ca_data = dc.load_data(COMM_AREA_FILENAME, COMM_AREA_COLS)
-hardship = dc.load_data(HARDSHIP_FILENAME, HARDSHIP_COLS)
-physical_distress = dc.load_data("health_physical_distress.csv", HEALTH_COLS, "Physical Distress")
-mental_distress = dc.load_data("health_mental_distress.csv", HEALTH_COLS, "Mental Distress")
-diabetes = dc.load_data("health_diabetes.csv", HEALTH_COLS, "Diabetes")
-hbp = dc.load_data("health_high_blood_pressure.csv", HEALTH_COLS, "High Blood Pressure")
-life_expectancy = dc.load_data("health_life_expectancy.csv", HEALTH_COLS, "Life Expectancy")
-
-# Merge hardship and health dataframes
-indicator_dfs = [hardship, physical_distress, mental_distress, diabetes, hbp, life_expectancy]
-merged_indicator_dfs = reduce(lambda left,right: pd.merge(left,right,on='census_tract'), indicator_dfs)
-df_comm_area = pd.merge(merged_indicator_dfs, ct_data, on="census_tract")
-final_df = pd.merge(df_comm_area, ca_data, on="community_area")
+merged_dfs = dc.merge_all_dfs()
+df = dc.tract_to_neighborhood(merged_dfs)
 
 app = Dash(__name__)
 
@@ -57,13 +28,13 @@ app.layout = html.Div([
     html.H6("Select at least one neighborhood."),
     dcc.Dropdown(
         id="neighborhood",
-        options=ca_data.Neighborhood,
+        options=df.Neighborhood,
         multi=True),
     dash_table.DataTable(
         id='filtered_table',
         #data=final_df.to_dict('records'),
         #filter_action="native",
-        columns=[{"name": i, "id": i} for i in final_df.columns],
+        columns=[{"name": i, "id": i} for i in df.columns],
         style_cell={'fontSize':20, 'font-family':'sans-serif', 'padding': '5px'},
         style_header={'fontWeight': 'bold'}),
     
@@ -75,7 +46,8 @@ app.layout = html.Div([
             Input(component_id='health_inputs', component_property='value'),
             Input(component_id='neighborhood', component_property='value'))
 def filter_table(health_inputs, neighborhood):
-    filtered_data = chs.filter_df(health_inputs, neighborhood)
+    full_df = chs.build_full_df(health_inputs)
+    filtered_data = chs.filter_df(full_df, health_inputs, neighborhood)
     return filtered_data.to_dict('records')
 
 
