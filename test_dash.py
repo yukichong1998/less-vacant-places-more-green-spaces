@@ -1,6 +1,7 @@
 from dash import Dash, dcc, html, Input, Output, dash_table
 from dash.dependencies import Input, Output
 import data_cleaning as dc
+import compute_health_score as chs
 import pandas as pd
 from functools import reduce
 
@@ -59,15 +60,27 @@ app.layout = html.Div([
         options=ca_data.Neighborhood,
         multi=True),
     dash_table.DataTable(
-        id='table',
-        data=final_df.to_dict('records'), 
+        id='filtered_table',
+        #data=final_df.to_dict('records'),
+        #filter_action="native",
         columns=[{"name": i, "id": i} for i in final_df.columns],
         style_cell={'fontSize':20, 'font-family':'sans-serif', 'padding': '5px'},
-        style_header={'fontWeight': 'bold'})
+        style_header={'fontWeight': 'bold'}),
     
 ])
 
 # -----------------------------------------
+@app.callback(
+            Output(component_id='filtered_table', component_property='data'),
+            Input(component_id='health_inputs', component_property='value'),
+            Input(component_id='neighborhood', component_property='value'))
+def filter_table(health_inputs, neighborhood):
+    filtered_data = chs.filter_df(health_inputs, neighborhood)
+    return filtered_data.to_dict('records')
+
+
+
+'''
 @app.callback(
             Output(component_id='table', component_property='children'),
             [Input(component_id='health_inputs', component_property='value')],
@@ -77,6 +90,9 @@ def update_health_output(health_inputs, neighborhood):
     if health_inputs:
         s = "summary score: {}".format(dc.create_summary_score(final_df, health_inputs, neighborhood))
         return s
+'''
+
+#sudo fuser -k 8050/tcp
 
 if __name__ == '__main__':
     app.run_server(debug=True)
