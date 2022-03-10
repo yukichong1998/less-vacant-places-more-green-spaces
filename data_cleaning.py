@@ -29,7 +29,7 @@ HEALTH_COLS = ["stcotr_fips", "est"]
 HEALTH_INDICATORS = ["Physical Distress", "Mental Distress", "Diabetes", 
                     "High Blood Pressure", "Life Expectancy"]
 ALL_INDICATORS = ["Hardship Score", "Physical Distress", "Mental Distress", 
-"Diabetes", "High Blood Pressure", "Life Expectancy"]
+                "Diabetes", "High Blood Pressure", "Life Expectancy"]
 
 
 def load_data(filename, col_list, col_name=None):
