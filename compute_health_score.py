@@ -34,6 +34,12 @@ def append_health_score(df, metrics):
     df['Health Risk Score'] = health_score
     return df
 
+def build_full_df(metrics):
+    merged_dfs = dc.merge_all_dfs()
+    df = dc.tract_to_neighborhood(merged_dfs)
+    full_df = append_health_score(df, metrics)
+    return full_df
+
 def filter_df(df, metrics, neighborhood):
     cols_to_keep = ["Neighborhood", "Health Risk Score"] + metrics + OTHER_INDICATORS
     subset = df[cols_to_keep]
