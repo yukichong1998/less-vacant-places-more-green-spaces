@@ -124,4 +124,8 @@ def city_owned_property():
 
     # Convert lists to pandas DataFrames & combine
     community_areas_df = pd.DataFrame.from_dict(community_areas_dict, orient='index')
+    community_areas_df.reset_index(inplace=True)
+    community_areas_df = community_areas_df.rename(columns = {'index':'Neighborhood'})
     community_areas_df.to_csv('community_areas.csv', index=True)
+    
+    return community_areas_df
