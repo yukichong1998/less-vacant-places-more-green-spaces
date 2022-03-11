@@ -8,17 +8,17 @@ import compute_health_score as chs
 
 app = Dash(__name__)
 
-HEALTH_COLS = ["stcotr_fips", "est"]
-life_expectancy = dc.load_data("health_life_expectancy.csv", HEALTH_COLS, "Life Expectancy")
-AVG_LIFE_EXP = life_expectancy["Life Expectancy"].mean()
-HEALTH_INDICATORS = ["Physical Distress", "Mental Distress", "Diabetes", 
-                    "High Blood Pressure", "Life Expectancy"]
-OTHER_INDICATORS = ["Hardship Score"]
+# HEALTH_COLS = ["stcotr_fips", "est"]
+# life_expectancy = dc.load_data("health_life_expectancy.csv", HEALTH_COLS, "Life Expectancy")
+# AVG_LIFE_EXP = life_expectancy["Life Expectancy"].mean()
+# HEALTH_INDICATORS = ["Physical Distress", "Mental Distress", "Diabetes", 
+#                     "High Blood Pressure", "Life Expectancy"]
+# OTHER_INDICATORS = ["Hardship Score"]
 
-merged_dfs = dc.merge_all_dfs()
-df = dc.tract_to_neighborhood(merged_dfs)
+# merged_dfs = dc.merge_all_dfs()
+# df = dc.tract_to_neighborhood(merged_dfs)
 
-print(df.head())
+# print(df.head())
 
 
 # ------------------------------------------------------------------------------
@@ -30,7 +30,10 @@ app.layout = html.Div([
     dcc.Dropdown(id="slct_parameter",
                  options=[
                      {"label": "Hardship Score", "value": "Hardship Score"},
-                     {"label": "Health Risk Score", "value": "Health Risk Score"}],
+                     {"label": "Health Risk Score", "value": "Health Risk Score"},
+                     {"label": "Number of Vacant Lots", "value": "Vacant Lots"},
+                     {"label": "Number of Green Spaces", "value": "Number of Green Spaces"},
+                     {"label": "Area of Green Spaces", "value": "Area of Green Spaces"}],
                  multi=False,
                  value="Hardship Score",
                  style={'width': "40%"}
@@ -70,19 +73,19 @@ def update_graph(option_slctd, health_params):
 
     container = "The parameter chosen by user was: {}".format(option_slctd)
 
-    with open('Neighborhoods.geojson') as fin:
+    with open('Community Areas.geojson') as fin:
         neighborhoods = json.load(fin)
 
-    new_df = chs.append_health_score(df, health_params)
-    print(new_df.head())
+    df = chs.build_full_df(health_params)
+    print(df.columns)
 
 
-    fig = px.choropleth_mapbox(new_df, geojson=neighborhoods, locations='Neighborhood', 
-                            featureidkey="properties.sec_neigh", 
+    fig = px.choropleth_mapbox(df, geojson=neighborhoods, locations='Neighborhood', 
+                            featureidkey="properties.community", 
                             color=option_slctd,
-                            color_continuous_scale="Viridis",
+                            color_continuous_scale="algae",
                             mapbox_style="carto-positron",
-                            zoom=9, center = {"lat": 41.8, "lon": -87.7},
+                            zoom=9, center = {"lat": 41.81, "lon": -87.7},
                             opacity=0.5,
                             labels={'df':option_slctd}
                           )
