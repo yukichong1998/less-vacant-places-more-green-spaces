@@ -64,16 +64,16 @@ def merge_health_dfs():
         health_data[i] = health_data[i].round(1)
     return health_data
 
-def merge_all_dfs():
-    '''
-    Merges health, hardship, lots and green spaces dataframes on census tract
-    unique identifier.
-    '''
-    hardship = load_data(HARDSHIP_FILENAME, HARDSHIP_COLS)
-    health = merge_health_dfs()
-    indicator_dfs = [hardship, health]
-    merged_df = reduce(lambda left,right: pd.merge(left,right,on='census_tract'), indicator_dfs)
-    return merged_df
+# def merge_all_dfs():
+#     '''
+#     Merges health, hardship, lots and green spaces dataframes on census tract
+#     unique identifier.
+#     '''
+#     hardship = load_data(HARDSHIP_FILENAME, HARDSHIP_COLS)
+#     health = merge_health_dfs()
+#     indicator_dfs = [hardship, health]
+#     merged_df = reduce(lambda left,right: pd.merge(left,right,on='census_tract'), indicator_dfs)
+#     return merged_df
 
 
 def tract_to_neighborhood():
@@ -91,31 +91,9 @@ def tract_to_neighborhood():
     df = pd.merge(df, ca_data, on="community_area")
     df = pd.merge(df, parks_lots, on="Neighborhood")
     df = df.loc[:, df.columns!='census_tract']
+    
     for col in ALL_INDICATORS:
         df[col] = df[col].round(1)
 
     return df
-
- 
-# def create_summary_score(data, metrics, neighborhood):
-#     '''
-#     Given the selected health metrics and tracts, creates a subset of
-#     data and a new column for summary score.
-
-#     Inputs:
-#         data: a dataframe consisting of one column for each health indicator
-#                 and a column for tract.
-#         tracts: list of tracts (str) to filter for
-#         metrics: list of health indicators (str) to filter for
-#     '''
-#     filter_neighborhood = data["Neighborhood"].isin(neighborhood)
-#     cols_to_keep = ["Neighborhood"] + metrics
-#     subset = data.loc[filter_neighborhood, cols_to_keep]
-#     print("subset:", subset)
-
-#     subset["summary_score"] = sum([subset[i] for i in metrics])
-#     print("Health Score:", subset["summary_score"])
-#     return subset
-
-
 
