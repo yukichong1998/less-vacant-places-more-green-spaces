@@ -73,7 +73,7 @@ def update_graph(option_slctd, health_params):
 
     container = "The parameter chosen by user was: {}".format(option_slctd)
 
-    with open('Community Areas.geojson') as fin:
+    with open('Community_Areas.geojson') as fin:
         neighborhoods = json.load(fin)
 
     df = chs.build_full_df(health_params)
