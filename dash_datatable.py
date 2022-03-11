@@ -4,8 +4,7 @@ from functools import reduce
 import data_cleaning as dc
 
 # Importing all dfs
-merged_dfs = dc.merge_all_dfs()
-df = dc.tract_to_neighborhood(merged_dfs)
+df = dc.tract_to_neighborhood()
 
 app = Dash(__name__)
 
