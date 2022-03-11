@@ -6,16 +6,20 @@ import data_cleaning as dc
 
 
 HEALTH_COLS = ["stcotr_fips", "est"]
-life_expectancy = dc.load_data("health_life_expectancy.csv", HEALTH_COLS, "Life Expectancy")
+life_expectancy = dc.load_data("health_life_expectancy.csv", HEALTH_COLS, 
+                               "Life Expectancy")
 AVG_LIFE_EXP = life_expectancy["Life Expectancy"].mean()
-HEALTH_INDICATORS = ["Physical Distress", "Mental Distress", "Diabetes", 
-                    "High Blood Pressure", "Life Expectancy"]
-OTHER_INDICATORS = ["Hardship Score"]
+OTHER_INDICATORS = ["Hardship Score", "Vacant Lots", "Number of Green Spaces",
+                    "Area of Green Spaces"]
 
-merged_dfs = dc.merge_all_dfs()
-df = dc.tract_to_neighborhood(merged_dfs)
-                
+
 def compute_health_score(df, metrics):
+    '''
+    Computes health risk score for each neighborhood by taking the mean of all 
+    the health indicators selected by the user as percentages, then weighting 
+    that average more heavily if the life expectancy of this neighborhood is 
+    below the average life expectancy in Chicago.
+    '''
     if "Life Expectancy" in metrics:
         # Weight metrics by whether life expectancy is above or below the mean
         early_death = df["Life Expectancy"] < AVG_LIFE_EXP
@@ -26,35 +30,44 @@ def compute_health_score(df, metrics):
     subset["Health Risk Score"] = subset[metrics].sum(axis=1).round(1)
     return subset["Health Risk Score"]
 
+
 def append_health_score(df, metrics):
     '''
-    Adds health risk score to the table.
+    Calculates and appends health risk score to the dataframe.
     '''
     health_score = compute_health_score(df, metrics).tolist()
     df['Health Risk Score'] = health_score
     return df
 
+
 def build_full_df(metrics):
-    merged_dfs = dc.merge_all_dfs()
-    df = dc.tract_to_neighborhood(merged_dfs)
+    '''
+    Builds full dataframe with all indicators and all 77 neighborhoods.
+
+    Returns:
+        - (pandas dataframe) full dataframe
+    '''
+    df = dc.tract_to_neighborhood()
     full_df = append_health_score(df, metrics)
     return full_df
 
+
 def filter_df(df, metrics, neighborhood):
-    cols_to_keep = ["Neighborhood", "Health Risk Score"] + metrics + OTHER_INDICATORS
+    '''
+    Filters dataframe by health metrics and neighborhood selected by user.
+
+    Inputs:
+        - df: (pandas dataframe)
+        - metrics: (list)
+        - neighborhood: (list)
+    
+    Returns:
+        - (pandas dataframe) Filtered dataframe by health metrics and 
+        neighborhood selected
+    '''
+    cols_to_keep = ["community_area", "Neighborhood", "Health Risk Score"] + \
+                    metrics + OTHER_INDICATORS
     subset = df[cols_to_keep]
     subset = subset[subset["Neighborhood"].isin(neighborhood)]
     return subset
-
-
-    
-    # # normalize the data to mean zero
-    # mean_score = df["health_score"].mean()
-    # std_score = df["health_score"].std()
-
-    # # multiply by negative 1 so the lower values are worse
-    # df["health_score_norm"] = -1 * ((df["health_score"] - mean_score) / std_score)
-
-    # subset["summary_score"] = sum([subset[i] for i in metrics])
-
 
