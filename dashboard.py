@@ -179,7 +179,8 @@ def update_scatter(option_slctd, neigh_slct):
 def update_bar(health_params, neigh_slct):
     data = chs.build_full_df(health_params)
     data.set_index('Neighborhood', inplace=True)
-    data.loc['CHICAGO'] = data.mean()
+    cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
+    data.loc['CHICAGO'] = data[cols_to_mean].mean()
 
     bar_x = ['Hardship Score', 'Health Risk Score', 'Number of Green Spaces', 'Number of Vacant Lots']
     bar_y = [data['Hardship Score'].loc[neigh_slct], 
@@ -200,7 +201,8 @@ def update_bar(health_params, neigh_slct):
 
 def update_table(health_params, neigh_selct):
     data = chs.build_full_df(health_params)
-    data.loc['mean'] = data.mean(numeric_only=True)
+    cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
+    data.loc['mean'] = data[cols_to_mean].mean()
     data['Neighborhood'].loc['mean'] = 'CHICAGO'
 
     output = data[data["Neighborhood"] == neigh_selct]

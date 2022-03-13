@@ -11,11 +11,13 @@ def scatter_data():
     park_areas = pd.read_csv('CPD_Parks.csv')
     parks['acres'] = park_areas['ACRES']
     parks['type'] = "Park"
+    
 
     lots = pd.read_csv('vacants.csv')
     lots['type'] = "Vacant Lot"
 
     both = pd.concat([parks, lots])
+    both.columns = ['name', 'latitude', 'longitude', 'community_area_name', 'acres', 'type']
     both["name"].fillna("Vacant Lot", inplace=True)
     both["acres"].fillna(10.0, inplace=True)
 
