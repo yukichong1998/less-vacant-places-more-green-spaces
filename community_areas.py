@@ -32,7 +32,8 @@ def gen_community_areas():
     community_areas_num = {}
     for community in community_areas_api:
         community_areas[community["community"]] = {'vacant_count': 0, 'vacant_acres': 0, 'park_count': 0,
-                                                   'park_acres': 0, 'census_tracts': [], 'community_area_polygons': []}
+                                                   'park_acres': 0, 'census_tracts': [], 'community_area_polygons': [],
+                                                   'park_polygons': []}
         community_areas[community["community"]]['community_area_polygons'].append(community['the_geom'])
         community_areas_num[community['area_numbe']] = community['community']
     pin_dict = {}
@@ -61,6 +62,7 @@ def gen_community_areas():
                     community_areas[pin_dict[shapefile["pin"]]]["vacant_acres"] += \
                         abs(geod.geometry_area_perimeter(Polygon(polygon[0]))[0])*0.000247105
                 vacants[shapefile["pin"]]["size"] = community_areas[pin_dict[shapefile["pin"]]]["vacant_acres"]
+
     # https://data.cityofchicago.org/Parks-Recreation/Parks-Chicago-Park-District-Park-Boundaries-curren/ej32-qgdr
     # Shapefiles, location, and acreage for park polygons
     parks_api = chicago.get("ejsh-fztr", select="the_geom, location, acres, park", limit=614)
@@ -108,6 +110,7 @@ def gen_community_areas():
                     for polygon in multipolygon['coordinates'][0]:
                         if point.within(Polygon(polygon)):
                             parks[park['park']]['community_area_name'] = community
+                            community_areas[community]['park_polygons'].append(park['the_geom'])
                             community_areas[community]['park_count'] += 1
                             community_areas[community]['park_acres'] += float(park['acres'])
 
