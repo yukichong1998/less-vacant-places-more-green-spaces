@@ -3,105 +3,50 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import Dash, dcc, html, Input, Output, dash_table
 import json
-import data_cleaning as dc
+import compute_health_score as chs
+import scatterplot_data as sd
+
+pd.options.mode.chained_assignment = None
 
 app = Dash(__name__)
 
-df = pd.read_csv("dummy_data.csv")
-
-HEALTH_COLS = ["stcotr_fips", "est"]
-
-physical_distress = dc.load_health_data("health_physical_distress.csv", HEALTH_COLS, "Physical Distress")
-mental_distress = dc.load_health_data("health_mental_distress.csv", HEALTH_COLS, "Mental Distress")
-diabetes = dc.load_health_data("health_diabetes.csv", HEALTH_COLS, "Diabetes")
-hbp = dc.load_health_data("health_high_blood_pressure.csv", HEALTH_COLS, "High Blood Pressure")
-life_expectancy = dc.load_health_data("health_life_expectancy.csv", HEALTH_COLS, "Life Expectancy")
-
-HEALTH_DATA = physical_distress.merge(mental_distress).merge(diabetes).merge(hbp).merge(life_expectancy)
-HEALTH_DATA = HEALTH_DATA.astype({"census_tract": str})
-
-with open("data/Parks.geojson") as json_file:
-        parks = json.load(json_file)
-
-merged_dfs = dc.merge_all_dfs()
-table_df = dc.tract_to_neighborhood(merged_dfs)
-
-fig2 = go.Figure(data=[go.Scattermapbox(lat=[0], lon=[0])])
-
-    # if shapes == 'parks':
-    #     shp = parks
-
-fig2.update_layout(
-        margin={"r":0,"t":0,"l":0,"b":0},
-        mapbox=go.layout.Mapbox(
-            style="carto-positron", 
-            zoom=10, 
-            center_lat = 41.8,
-            center_lon = -87.7,
-            layers=[{
-                'sourcetype': 'geojson',
-                'source': parks,
-                'type': "fill",
-                'color': 'royalblue'
-            }]
-        
-        )
-    )
-
-fig3 = go.Figure(data=[go.Scattermapbox(lat=[0], lon=[0])])
-
-    # if shapes == 'parks':
-    #     shp = parks
-
-fig3.update_layout(
-        margin={"r":0,"t":0,"l":0,"b":0},
-        mapbox=go.layout.Mapbox(
-            style="carto-positron", 
-            zoom=10, 
-            center_lat = 41.8,
-            center_lon = -87.7,
-            layers=[{
-                'sourcetype': 'geojson',
-                'source': parks,
-                'type': "fill"
-            }]
-        
-        )
-    )
-#print(HEALTH_DATA.head())
-
+boundaries = sd.neighborhood_zoom()
+scatter_df = sd.scatter_data()
+table_cols = ["Neighborhood", "Hardship Score", 
+            "Mental Distress", 
+            "Physical Distress", 
+            "Diabetes", 
+            "High Blood Pressure", 
+            "Life Expectancy", 
+            "Health Risk Score", 
+            "Vacant Lots", 
+            "Number of Green Spaces", 
+            "Area of Green Spaces"]
 
 # ------------------------------------------------------------------------------
 # App layout
-
 app.layout = html.Div([
 
-    html.H1("Less Parking More Parks", style={'text-align': 'center'}),
-
-    html.H5("Select at least one health indicator."),
+    html.H1("Less Parking, More Parks", style={'text-align': 'center'}),
+    html.H6("Select a map layer."),
     html.Div([
-        "Health Indicator(s): ",
-        dcc.Dropdown(id="health_inputs",
-                options={
-                    "Mental Distress" : "Mental Distress",
-                    "Physical Distress": "Physical Distress",
-                    "Diabetes": "Diabetes",
-                    "High Blood Pressure": "High Blood Pressure",
-                    "Life Expectancy": "Life Expectancy"
-                    },
-                multi=True
-                )
-            ]),
-            
-    html.Div(id="health_output"),
-    html.Br(),
-    html.H6("Select at least one census tract."),
-    html.Div([dcc.Dropdown(id="tracts",
-            options=HEALTH_DATA.census_tract,
-            multi=True
-            ),
-            html.H6("Select at least one health indicator."),
-            html.Div([dcc.Checklist(id="health_inputs_checklist",
+        dcc.Dropdown(id="slct_parameter",
+                 options=[
+                     {"label": "Hardship Score", "value": "Hardship Score"},
+                     {"label": "Health Risk Score", "value": "Health Risk Score"},
+                     {"label": "Number of Vacant Lots", "value": "Vacant Lots"},
+                     {"label": "Number of Green Spaces", "value": "Number of Green Spaces"},
+                     {"label": "Area of Green Spaces", "value": "Area of Green Spaces"}],
+                 multi=False,
+                 value="Hardship Score",
+                 style={'width': "40%"}
+                 ),
+        html.Div(id='output_container1', children=[])
+    ]),
+    
+    # Health inputs checklist to appear only if Health Risk Score is selected in dropdown above.
+    html.Div(id='health_inputs_container',
+            children = [dcc.Checklist(id="health_inputs_checklist",
                     options={
                         "Mental Distress" : "Mental Distress",
                         "Physical Distress": "Physical Distress",
@@ -109,112 +54,179 @@ app.layout = html.Div([
                         "High Blood Pressure": "High Blood Pressure",
                         "Life Expectancy": "Life Expectancy"
                         },
-                    value = ["Life Expectancy"]
-                )
-            ])
-        ]),
+                    value = ["Mental Distress", "Life Expectancy"]
+                )],
+            style= {'display': 'block'}
+    ),
 
-    html.Br(),
-    html.Div([dcc.Dropdown(id="slct_year",
-            options=[
-                {"label": "Health", "value": "Health"},
-                {"label": "Green Spaces", "value": "Green"},
-                {"label": "Open Lots", "value": "Lots"}],
-            multi=False,
-            value="Health",
-            style={'width': "40%"}
-            ),
-
-        html.Div(id='output_container', children=[]),
-        html.Br(),
-
-    html.Div([dcc.Graph(id='chicago_map', figure={}, style={'display': 'inline-block'}),
-    dcc.Graph(figure=fig2, style={'display': 'inline-block'}),
-    dcc.Graph(figure=fig3, style={'display': 'inline-block'})]),
-
-    dcc.Checklist(id="parks",
-                    options={
-                        "data/Parks.geojson" : "parks"
+    html.Div([
+        dcc.Checklist(id="slct_locations",
+             options={
+                    "Parks": "Parks",
+                    "Vacant Lots": "Vacant Lots"
                         },
-                    value = ["data/Parks.geojson"]
-    )
+                value = ["Parks", "Vacant Lots"]
+                ),
+    
+        dcc.Dropdown(id="slct_neigh",
+                 options=boundaries.index,
+                 multi=False,
+                 value="CHICAGO",
+                 style={'width': "40%"}
+                 ),
+
+     
+        html.Div(id='output_container2', children=[]),
+
     ]),
-    # TABLE
+
     html.Br(),
-    html.Div(dash_table.DataTable(data=, 
-                                columns=[{"name": i, "id": i} for i in df.columns],
-                                style_cell={'fontSize':20, 'font-family':'sans-serif', 'padding': '5px'},
-                                style_header={'fontWeight': 'bold'},))
+
+    html.Div([dcc.Graph(id='chicago_map_choro', figure={},
+                style={'width': '49%', 'display': 'inline-block'}),
+            dcc.Graph(id='chicago_map_scatter', figure={},
+                style={'width': '49%', 'display': 'inline-block'})
+    ]),
+
+    html.Div([
+        html.Div(id='output_container3', children=[]),
+        dcc.Graph(id='bar', figure={},
+        style={'width': '49%', 'display': 'inline-block'})    
+    ]),
+
+    html.Div([
+        dash_table.DataTable(id='table', columns=[{'id': c, 'name': c} for c in table_cols]) 
     ])
+ 
+
+])
 
 
 # ------------------------------------------------------------------------------
+# Connect the Plotly graphs with Dash Components
 @app.callback(
-
-
-
-
-@app.callback(
-    [Output(component_id='output_container', component_property='children'),
-     Output(component_id='chicago_map', component_property='figure')],
-    [Input(component_id='slct_year', component_property='value')]
+    [Output(component_id='output_container1', component_property='children'),
+     Output(component_id='chicago_map_choro', component_property='figure')],
+    [Input(component_id='slct_parameter', component_property='value'),
+    Input(component_id='health_inputs_checklist', component_property='value')]
 )
-def update_graph(option_slctd):
-    # print(option_slctd)
-    # print(type(option_slctd))
+def update_choro(option_slctd, health_params):
 
     container = "The parameter chosen by user was: {}".format(option_slctd)
 
-    with open('Neighborhoods.geojson') as fin:
+    with open('Community_Areas.geojson') as fin:
         neighborhoods = json.load(fin)
 
-    fig1 = px.choropleth_mapbox(df, geojson=neighborhoods, locations='sec_neigh', 
-                            featureidkey="properties.sec_neigh", 
+    choro_df = chs.build_full_df(health_params)
+   
+    fig = px.choropleth_mapbox(choro_df, geojson=neighborhoods, locations='Neighborhood', 
+                            featureidkey="properties.community", 
                             color=option_slctd,
-                            color_continuous_scale="Viridis",
-                            range_color=(0, 12),
+                            color_continuous_scale="algae",
                             mapbox_style="carto-positron",
-                            zoom=9, center = {"lat": 41.8, "lon": -87.7},
+                            zoom=9, center = {"lat": 41.81, "lon": -87.7},
                             opacity=0.5,
-                            labels={'dummy':option_slctd}
+                            labels={'df':option_slctd}
                           )
-    fig1.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
   
-    return container, fig1
+    return container, fig
 
-# @app.callback(
-#     [Output(component_id='parks_map', component_property='figure')],
-#     [Input(component_id='parks', component_property='value')])
+@app.callback(
+    [Output(component_id='health_inputs_container', component_property='style')],
+    [Input(component_id='slct_parameter', component_property='value')])
+def show_health_inputs_checklist(parameter):
+    if "Health Risk Score" in parameter:
+        return {'display': 'block'}
+    else:
+        return {'display':'none'}
 
-# def new_graph(shapes):
-#     print(shapes[0])
 
-#     with open(shapes[0]) as json_file:
-#         parks = json.load(json_file)
 
-#     fig2 = go.Figure(data=[go.Scattermapbox(lat=[0], lon=[0])])
+@app.callback(
+    [Output(component_id='output_container2', component_property='children'),
+     Output(component_id='chicago_map_scatter', component_property='figure')],
+    [Input(component_id='slct_locations', component_property='value'),
+    Input(component_id='slct_neigh', component_property='value')]
+)
+def update_scatter(option_slctd, neigh_slct):
 
-#     # if shapes == 'parks':
-#     #     shp = parks
+    container = "Parks and Vacant Lot Locations"
 
-#     fig2.update_layout(
-#         margin={"r":0,"t":0,"l":0,"b":0},
-#         mapbox=go.layout.Mapbox(
-#             style="carto-positron", 
-#             zoom=10, 
-#             center_lat = 41.8,
-#             center_lon = -87.7,
-#             layers=[{
-#                 'sourcetype': 'geojson',
-#                 'source': parks,
-#                 'type': "fill",
-#             }]
-        
-#         )
-#     )
-#     return fig2
+    if "Vacant Lots" not in option_slctd:
+        data = scatter_df[scatter_df['type'] == "Park"]
+    elif "Parks" not in option_slctd:
+        data = scatter_df[scatter_df['type'] == "Vacant Lot"]
+    else:
+        data = scatter_df
+
+    zoom_opt = boundaries.loc[neigh_slct]["Zoom"]
+    lat_opt = boundaries.loc[neigh_slct]["Lat"]
+    lon_opt = boundaries.loc[neigh_slct]["Lon"]
+
+    with open('Community_Areas.geojson') as fin:
+        neighborhoods = json.load(fin)
+
+    fig = px.scatter_mapbox(data, lat="latitude", lon="longitude", color="type", hover_name="name", hover_data=["community_area_name"], 
+                            color_discrete_map={"Park":"green", "Vacant Lot":"gray"})
+    fig.update_layout(mapbox=go.layout.Mapbox(
+                    style="carto-positron",
+                    zoom=zoom_opt, 
+                    center_lat = lat_opt,
+                    center_lon = lon_opt,
+                    layers=[{
+                        'sourcetype': 'geojson',
+                        'source': neighborhoods,
+                        'type': "line",
+                        'opacity': 0.5
+                    }]))
+    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+
+    return container, fig
+
+@app.callback(
+    [Output(component_id='output_container3', component_property='children'),
+     Output(component_id='bar', component_property='figure')],
+    [Input(component_id='health_inputs_checklist', component_property='value'),
+    Input(component_id='slct_neigh', component_property='value')]
+)
+
+def update_bar(health_params, neigh_slct):
+    data = chs.build_full_df(health_params)
+    data.set_index('Neighborhood', inplace=True)
+    cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
+    data.loc['CHICAGO'] = data[cols_to_mean].mean()
+
+    bar_x = ['Hardship Score', 'Health Risk Score', 'Number of Green Spaces', 'Number of Vacant Lots']
+    bar_y = [data['Hardship Score'].loc[neigh_slct], 
+            data['Health Risk Score'].loc[neigh_slct], 
+            data['Number of Green Spaces'].loc[neigh_slct], 
+            data['Vacant Lots'].loc[neigh_slct]]
+
+    container = []
+
+    fig = px.bar(data, x=bar_x, y=bar_y)
+
+    return container, fig
+
+@app.callback(Output(component_id='table', component_property='data'),
+    [Input(component_id='health_inputs_checklist', component_property='value'),
+    Input(component_id='slct_neigh', component_property='value')]
+)
+
+def update_table(health_params, neigh_selct):
+    data = chs.build_full_df(health_params)
+    cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
+    data.loc['mean'] = data[cols_to_mean].mean()
+    data['Neighborhood'].loc['mean'] = 'CHICAGO'
+
+    output = data[data["Neighborhood"] == neigh_selct]
+    output = output.round(2)
+    
+    return output.to_dict('records')
+
 
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=True, port=8051)
