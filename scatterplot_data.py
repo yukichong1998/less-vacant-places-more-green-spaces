@@ -17,7 +17,7 @@ def scatter_data():
     lots['type'] = "Vacant Lot"
 
     both = pd.concat([parks, lots])
-    both.columns = ['name', 'latitude', 'longitude', 'community_area_name', 'acres', 'type']
+    both.columns = ['name', 'latitude', 'longitude', 'size', 'community_area_name', 'acres', 'type']
     both["name"].fillna("Vacant Lot", inplace=True)
     both["acres"].fillna(10.0, inplace=True)
 
