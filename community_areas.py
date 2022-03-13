@@ -2,6 +2,8 @@ from sodapy import Socrata
 import pandas as pd
 from geopy.geocoders import Nominatim
 from shapely.geometry import Point, Polygon
+from pyproj import Geod
+from shapely import wkt
 
 def gen_community_areas():
 
@@ -29,10 +31,8 @@ def gen_community_areas():
     community_areas = {}
     community_areas_num = {}
     for community in community_areas_api:
-        community_areas[community["community"]] = {'vacant_count': 0, 'vacant_sqft': 0, 'vacant_lat': None,
-                                                   'vacant_long': None, 'park_count': 0, 'park_acres': 0,
-                                                   'park_lat': None, 'park_long': None, 'census_tracts': [],
-                                                   'community_area_polygons': []}
+        community_areas[community["community"]] = {'vacant_count': 0, 'vacant_acres': 0, 'park_count': 0,
+                                                   'park_acres': 0, 'census_tracts': [], 'community_area_polygons': []}
         community_areas[community["community"]]['community_area_polygons'].append(community['the_geom'])
         community_areas_num[community['area_numbe']] = community['community']
     pin_dict = {}
@@ -41,14 +41,15 @@ def gen_community_areas():
         if "community_area_name" in parcel:
             if parcel["pin"] in vacant_pins:
                 vacants[parcel["pin"]] = {'latitude': parcel['latitude'], 'longitude': parcel['longitude'],
-                                'community_area_name': parcel['community_area_name']}
+                                'community_area_name': parcel['community_area_name'], 'size': None}
                 community_areas[parcel["community_area_name"]]["vacant_count"] += 1
                 pin_dict[parcel["pin"]] = parcel["community_area_name"]
 
-    '''
+
     # https://datacatalog.cookcountyil.gov/Property-Taxation/ccgisdata-Parcel-2021/77tz-riq7
     # Pins and shapefiles for all property polygons
     shapefiles = cook_county.get("77tz-riq7", select="pin10, the_geom", limit=612202, where="municipality='Chicago'")
+    geod = Geod(ellps="WGS84")
     for shapefile in shapefiles:
         if "pin10" in shapefile:
             shapefile["pin"] = '-'.join([shapefile["pin10"][:2], shapefile["pin10"][2:4],
@@ -56,9 +57,10 @@ def gen_community_areas():
                                                shapefile["pin10"][10:]])
             shapefile["pin"] += "0000"
             if shapefile["pin"] in pin_dict:
-                community_areas[pin_dict[shapefile["pin"]]]["vacant_polygons"].append(shapefile["the_geom"])
-    '''
-
+                for polygon in shapefile["the_geom"]['coordinates']:
+                    community_areas[pin_dict[shapefile["pin"]]]["vacant_acres"] += \
+                        abs(geod.geometry_area_perimeter(Polygon(polygon[0]))[0])*0.000247105
+                vacants[shapefile["pin"]]["size"] = community_areas[pin_dict[shapefile["pin"]]]["vacant_acres"]
     # https://data.cityofchicago.org/Parks-Recreation/Parks-Chicago-Park-District-Park-Boundaries-curren/ej32-qgdr
     # Shapefiles, location, and acreage for park polygons
     parks_api = chicago.get("ejsh-fztr", select="the_geom, location, acres, park", limit=614)
@@ -98,7 +100,8 @@ def gen_community_areas():
     for park in parks_api:
         if type(park['location']) == str:
             park_location = geolocator.geocode(park['location'] + ', Chicago, US')
-            parks[park['park']] = {'latitude': park_location.latitude, 'longitude': park_location.longitude}
+            parks[park['park']] = {'latitude': park_location.latitude, 'longitude': park_location.longitude,
+                                   'size': float(park['acres'])}
             point = Point(park_location.longitude, park_location.latitude)
             for community in community_areas:
                 for multipolygon in community_areas[community]['community_area_polygons']:
@@ -107,7 +110,6 @@ def gen_community_areas():
                             parks[park['park']]['community_area_name'] = community
                             community_areas[community]['park_count'] += 1
                             community_areas[community]['park_acres'] += float(park['acres'])
-                            community_areas[community]['park_polygons'].append(park['the_geom'])
 
     # https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Census-Tracts-2010/5jrd-6zik
     # Shapefiles for census tract polygons
@@ -118,8 +120,10 @@ def gen_community_areas():
 
     # Convert lists to pandas DataFrames & combine
     parks_df = pd.DataFrame.from_dict(parks, orient='index')
+    parks_df["size"] = parks_df["size"] / parks_df["size"].abs().max()
     parks_df.to_csv('parks.csv', index=True)
     vacants_df = pd.DataFrame.from_dict(vacants, orient='index')
+    vacants_df["size"] = vacants_df["size"] / vacants_df["size"].abs().max()
     vacants_df.to_csv('vacants.csv', index=True)
     community_areas_df = pd.DataFrame.from_dict(community_areas, orient='index')
     community_areas_df.reset_index(inplace=True)
