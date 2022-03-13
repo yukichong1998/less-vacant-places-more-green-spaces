@@ -9,7 +9,15 @@ import data_cleaning as dc
 
 pd.options.mode.chained_assignment = None
 
-app = Dash(__name__)
+external_stylesheets = [
+    {
+        "href": "https://fonts.googleapis.com/css2?"
+                "family=Lato:wght@400;700&display=swap",
+        "rel": "stylesheet",
+    },
+]
+
+app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 boundaries = sd.neighborhood_zoom()
 scatter_df = sd.scatter_data()
@@ -27,11 +35,17 @@ table_cols = ["Neighborhood", "Hardship Score",
 # ------------------------------------------------------------------------------
 # App layout
 app.layout = html.Div([
-
-    html.H1("Less Parking, More Parks", style={'text-align': 'center'}),
-
-    html.Div([html.Div([html.H2("Distribution across neighborhoods in Chicago"),
-                        html.H3("Select a map layer:"),
+    html.Div([
+        html.P(children="🌳🌳🌳", className="header-emoji"),
+        html.H1("Less Vacant Places, More Green Spaces", style={'text-align': 'center'}, className="header-title"),
+        html.P(
+            children="Analyzing the effect of green spaces on public health",
+            className="header-description")],
+            className="header"),
+    html.Br(),
+    html.Div([html.Div([html.H3("Distribution across neighborhoods in Chicago", className="map-title"),
+                        html.Br(),
+                        html.H4("Select a map layer:", className="subheader-title"),
                         dcc.Dropdown(id="slct_parameter",
                                 options=[
                                     {"label": "Hardship Score", "value": "Hardship Score"},
@@ -41,42 +55,46 @@ app.layout = html.Div([
                                     {"label": "Area of Green Spaces", "value": "Area of Green Spaces"}],
                                 multi=False,
                                 value="Hardship Score",
-                                style={'width': "70%"}
-                                ),
+                                style={'width': "70%"}),
                         #html.Div(id='output_container1', children=[])
-        
+                        html.Br(),
                         # Health inputs checklist to appear only if Health Risk Score is selected in dropdown above.
                         html.Div(id='health_inputs_container',
-                                children = [html.H4("Select at least two health indicators to calculate the Health Risk Score."),
-                                            dcc.Checklist(id="health_inputs_checklist",
+                                children = [html.H4("Select at least two health indicators to compute the health risk score.", className="subheader-title"),
+                                            dcc.Checklist(
+                                                id="health_inputs_checklist",
                                                 options={
-                                                        "Mental Distress" : "Mental Distress",
-                                                        "Physical Distress": "Physical Distress",
-                                                        "Diabetes": "Diabetes",
-                                                        "High Blood Pressure": "High Blood Pressure",
-                                                        "Life Expectancy": "Life Expectancy"
-                                                        },
-                                                    value = ["Mental Distress", "Life Expectancy"]
+                                                    "Mental Distress" : "Mental Distress",
+                                                    "Physical Distress": "Physical Distress",
+                                                    "Diabetes": "Diabetes",
+                                                    "High Blood Pressure": "High Blood Pressure",
+                                                    "Life Expectancy": "Life Expectancy"
+                                                    },
+                                                value = ["Mental Distress", "Life Expectancy"],
+                                                className="checklist"
                                             )],
                                 style= {'width': '50%', 'display': 'block'}
                                 )],
                         style= {'width': '50%', 'display': 'inline-block', 'vertical-align': 'top'}
                     ),
             html.Div([
-                html.H2("Locations of Parks and Vacant Lots"),
-                html.H3("Select a neighborhood:"),
+                html.H3("Locations of Parks and Vacant Lots", className="map-title"),
+                html.Br(),
+                html.H4("Select a neighborhood:", className="subheader-title"),
                 dcc.Dropdown(id="slct_neigh",
                         options=boundaries.index,
                         multi=False,
                         value="CHICAGO",
-                        style={'width': "50%"}
+                        style={'width': "50%"},
                         ),
-                dcc.Checklist(id="slct_locations",
+                dcc.Checklist(
+                    id="slct_locations",
                     options={
                             "Parks": "Parks",
                             "Vacant Lots": "Vacant Lots"
                                 },
-                        value = ["Parks", "Vacant Lots"]
+                    value = ["Parks", "Vacant Lots"],
+                    className="checklist"
                         ),
             ],
             style= {'width': '50%', 'display': 'inline-block', 'vertical-align': 'top'}
@@ -87,19 +105,44 @@ app.layout = html.Div([
     html.Br(),
 
     html.Div([dcc.Graph(id='chicago_map_choro', figure={},
-                style={'width': '49%', 'display': 'inline-block'}),
+                style={'width': '50%', 'display': 'inline-block'}),
             dcc.Graph(id='chicago_map_scatter', figure={},
-                style={'width': '49%', 'display': 'inline-block'})
+                style={'width': '50%', 'display': 'inline-block'})
     ]),
+
+    html.Br(),
+
+    html.H3("Legend:", className="map-title"),
+    html.H4("Hardship Score - Composite score incorporating unemployment," 
+            "age dependency, education, per capita income, crowded housing," 
+            "and poverty into a single score", className="subheader-title"),
+    html.H4("Health Risk Score -  Composite score incorporating at least two of" 
+            "the following metrics selected:", className="subheader-title"),
+    html.H5("   - Mental Distress: Mental health not good for ≥14 days during the past 30 days among adults aged ≥18 years (%)", className="checklist"),
+    html.H5("   - Physical Distress: Physical health not good for ≥14 days during the past 30 days among adults aged ≥18 years (%)", className="checklist"),
+    html.H5("   - Diabetes: Diabetes among adults aged ≥18 years (%)", className="checklist"),
+    html.H5("   - High Blood Pressure: High blood pressure among adults aged ≥18 years (%)", className="checklist"),
+    html.H5("   - Life Expectancy: Average life expectancy at birth (years)", className="checklist"),
+    html.H4("Area of Green Spaces (acres)", className="subheader-title"),
 
     #html.Div([
         #html.Div(id='output_container3', children=[]),
     #    dcc.Graph(id='bar', figure={},
     #    style={'width': '49%', 'display': 'inline-block'})
     #]),
-
+    html.Br(),
     html.Div([
-        dash_table.DataTable(id='table')
+        dash_table.DataTable(
+            id='table',
+            style_cell={
+                'fontSize':14, 
+                'font-family': 'sans-serif', 
+                'padding': '5px', 
+                'color': 'rgb(246, 234, 223)',
+                'backgroundColor': 'transparent'},
+            style_header={'fontWeight': 'bold'}
+            )
+        ,
         #columns=[{'id': c, 'name': c} for c in table_cols]
     ])
 
