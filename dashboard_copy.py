@@ -200,9 +200,9 @@ def update_scatter(option_slctd, neigh_slct):
     #container = ""
 
     if "Vacant Lots" not in option_slctd:
-        data = scatter_df[scatter_df['type'] == "Park"]
+        data = scatter_df[scatter_df['Land Use'] == "Park"]
     elif "Parks" not in option_slctd:
-        data = scatter_df[scatter_df['type'] == "Vacant Lot"]
+        data = scatter_df[scatter_df['Land Use'] == "Vacant Lot"]
     else:
         data = scatter_df
 
@@ -213,8 +213,8 @@ def update_scatter(option_slctd, neigh_slct):
     with open('Community_Areas.geojson') as fin:
         neighborhoods = json.load(fin)
 
-    fig = px.scatter_mapbox(data, lat="latitude", lon="longitude", color="type", hover_name="name", hover_data=["community_area_name"], 
-                            color_discrete_map={"Park":"green", "Vacant Lot":"gray"})
+    fig = px.scatter_mapbox(data, lat="latitude", lon="longitude", color="Land Use", hover_name="name", hover_data=["community_area_name"], 
+                            color_discrete_map={"Park":"green", "Vacant Lot":"gray"}, size='normalized_size')
     fig.update_layout(mapbox=go.layout.Mapbox(
                     style="carto-positron",
                     zoom=zoom_opt, 

@@ -8,8 +8,6 @@ def neighborhood_zoom():
 def scatter_data():
 
     parks = pd.read_csv('parks.csv')
-    park_areas = pd.read_csv('CPD_Parks.csv')
-    parks['acres'] = park_areas['ACRES']
     parks['type'] = "Park"
     
 
@@ -17,9 +15,10 @@ def scatter_data():
     lots['type'] = "Vacant Lot"
 
     both = pd.concat([parks, lots])
-    both.columns = ['name', 'latitude', 'longitude', 'size', 'community_area_name', 'acres', 'type']
+    both.columns = ['name', 'latitude', 'longitude', 'normalized_size', 'community_area_name', 'Land Use']
     both["name"].fillna("Vacant Lot", inplace=True)
-    both["acres"].fillna(10.0, inplace=True)
+    both['normalized_size'].fillna(both['normalized_size'].mean(), inplace=True)
+ 
 
     return both
 
