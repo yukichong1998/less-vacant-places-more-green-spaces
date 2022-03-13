@@ -21,15 +21,15 @@ def compute_health_score(df, metrics):
     below the average life expectancy in Chicago.
     '''
     assert len(metrics) > 1
-    
+    new_metrics = metrics
     if "Life Expectancy" in metrics:
         # Weight metrics by whether life expectancy is above or below the mean
         early_death = df["Life Expectancy"] < AVG_LIFE_EXP
         df.loc[early_death, metrics] = df.loc[early_death, metrics] * 1.1
-        metrics.remove("Life Expectancy")
-    weight = 100 / len(metrics)
-    subset = df[metrics] / 100 * weight
-    subset["Health Risk Score"] = subset[metrics].sum(axis=1).round(1)
+        new_metrics = [c for c in metrics if c != "Life Expectancy"]
+    weight = 100 / len(new_metrics)
+    subset = df[new_metrics] / 100 * weight
+    subset["Health Risk Score"] = subset[new_metrics].sum(axis=1).round(1)
     return subset["Health Risk Score"]
 
 
