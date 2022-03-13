@@ -5,6 +5,7 @@ from dash import Dash, dcc, html, Input, Output, dash_table
 import json
 import compute_health_score as chs
 import scatterplot_data as sd
+import data_cleaning as dc
 
 pd.options.mode.chained_assignment = None
 
@@ -28,57 +29,60 @@ table_cols = ["Neighborhood", "Hardship Score",
 app.layout = html.Div([
 
     html.H1("Less Parking, More Parks", style={'text-align': 'center'}),
-    html.H6("Select a map layer."),
-    html.Div([
-        dcc.Dropdown(id="slct_parameter",
-                 options=[
-                     {"label": "Hardship Score", "value": "Hardship Score"},
-                     {"label": "Health Risk Score", "value": "Health Risk Score"},
-                     {"label": "Number of Vacant Lots", "value": "Vacant Lots"},
-                     {"label": "Number of Green Spaces", "value": "Number of Green Spaces"},
-                     {"label": "Area of Green Spaces", "value": "Area of Green Spaces"}],
-                 multi=False,
-                 value="Hardship Score",
-                 style={'width': "40%"}
-                 ),
-        html.Div(id='output_container1', children=[])
-    ]),
-    
-    # Health inputs checklist to appear only if Health Risk Score is selected in dropdown above.
-    html.Div(id='health_inputs_container',
-            children = [dcc.Checklist(id="health_inputs_checklist",
+
+    html.Div([html.Div([html.H2("Distribution across neighborhoods in Chicago"),
+                        html.H3("Select a map layer:"),
+                        dcc.Dropdown(id="slct_parameter",
+                                options=[
+                                    {"label": "Hardship Score", "value": "Hardship Score"},
+                                    {"label": "Health Risk Score", "value": "Health Risk Score"},
+                                    {"label": "Number of Vacant Lots", "value": "Vacant Lots"},
+                                    {"label": "Number of Green Spaces", "value": "Number of Green Spaces"},
+                                    {"label": "Area of Green Spaces", "value": "Area of Green Spaces"}],
+                                multi=False,
+                                value="Hardship Score",
+                                style={'width': "70%"}
+                                ),
+                        #html.Div(id='output_container1', children=[])
+        
+                        # Health inputs checklist to appear only if Health Risk Score is selected in dropdown above.
+                        html.Div(id='health_inputs_container',
+                                children = [html.H4("Select at least two health indicators to calculate the Health Risk Score."),
+                                            dcc.Checklist(id="health_inputs_checklist",
+                                                options={
+                                                        "Mental Distress" : "Mental Distress",
+                                                        "Physical Distress": "Physical Distress",
+                                                        "Diabetes": "Diabetes",
+                                                        "High Blood Pressure": "High Blood Pressure",
+                                                        "Life Expectancy": "Life Expectancy"
+                                                        },
+                                                    value = ["Mental Distress", "Life Expectancy"]
+                                            )],
+                                style= {'width': '50%', 'display': 'block'}
+                                )],
+                        style= {'width': '50%', 'display': 'inline-block', 'vertical-align': 'top'}
+                    ),
+            html.Div([
+                html.H2("Locations of Parks and Vacant Lots"),
+                html.H3("Select a neighborhood:"),
+                dcc.Dropdown(id="slct_neigh",
+                        options=boundaries.index,
+                        multi=False,
+                        value="CHICAGO",
+                        style={'width': "50%"}
+                        ),
+                dcc.Checklist(id="slct_locations",
                     options={
-                        "Mental Distress" : "Mental Distress",
-                        "Physical Distress": "Physical Distress",
-                        "Diabetes": "Diabetes",
-                        "High Blood Pressure": "High Blood Pressure",
-                        "Life Expectancy": "Life Expectancy"
-                        },
-                    value = ["Mental Distress", "Life Expectancy"]
-                )],
-            style= {'display': 'block'}
+                            "Parks": "Parks",
+                            "Vacant Lots": "Vacant Lots"
+                                },
+                        value = ["Parks", "Vacant Lots"]
+                        ),
+            ],
+            style= {'width': '50%', 'display': 'inline-block', 'vertical-align': 'top'}
+        )
+        ]
     ),
-
-    html.Div([
-        dcc.Checklist(id="slct_locations",
-             options={
-                    "Parks": "Parks",
-                    "Vacant Lots": "Vacant Lots"
-                        },
-                value = ["Parks", "Vacant Lots"]
-                ),
-    
-        dcc.Dropdown(id="slct_neigh",
-                 options=boundaries.index,
-                 multi=False,
-                 value="CHICAGO",
-                 style={'width': "40%"}
-                 ),
-
-     
-        html.Div(id='output_container2', children=[]),
-
-    ]),
 
     html.Br(),
 
@@ -88,16 +92,16 @@ app.layout = html.Div([
                 style={'width': '49%', 'display': 'inline-block'})
     ]),
 
-    html.Div([
-        html.Div(id='output_container3', children=[]),
-        dcc.Graph(id='bar', figure={},
-        style={'width': '49%', 'display': 'inline-block'})    
-    ]),
+    #html.Div([
+        #html.Div(id='output_container3', children=[]),
+    #    dcc.Graph(id='bar', figure={},
+    #    style={'width': '49%', 'display': 'inline-block'})
+    #]),
 
     html.Div([
-        dash_table.DataTable(id='table', columns=[{'id': c, 'name': c} for c in table_cols]) 
+        dash_table.DataTable(id='table')
+        #columns=[{'id': c, 'name': c} for c in table_cols]
     ])
- 
 
 ])
 
@@ -105,14 +109,14 @@ app.layout = html.Div([
 # ------------------------------------------------------------------------------
 # Connect the Plotly graphs with Dash Components
 @app.callback(
-    [Output(component_id='output_container1', component_property='children'),
-     Output(component_id='chicago_map_choro', component_property='figure')],
+    Output(component_id='chicago_map_choro', component_property='figure'),
     [Input(component_id='slct_parameter', component_property='value'),
     Input(component_id='health_inputs_checklist', component_property='value')]
 )
 def update_choro(option_slctd, health_params):
 
-    container = "The parameter chosen by user was: {}".format(option_slctd)
+    #container = "The parameter chosen by user was: {}".format(option_slctd)
+    #container = ""
 
     with open('Community_Areas.geojson') as fin:
         neighborhoods = json.load(fin)
@@ -130,11 +134,11 @@ def update_choro(option_slctd, health_params):
                           )
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
   
-    return container, fig
+    return fig
 
 @app.callback(
-    [Output(component_id='health_inputs_container', component_property='style')],
-    [Input(component_id='slct_parameter', component_property='value')])
+    Output(component_id='health_inputs_container', component_property='style'),
+    Input(component_id='slct_parameter', component_property='value'))
 def show_health_inputs_checklist(parameter):
     if "Health Risk Score" in parameter:
         return {'display': 'block'}
@@ -144,14 +148,13 @@ def show_health_inputs_checklist(parameter):
 
 
 @app.callback(
-    [Output(component_id='output_container2', component_property='children'),
-     Output(component_id='chicago_map_scatter', component_property='figure')],
+    Output(component_id='chicago_map_scatter', component_property='figure'),
     [Input(component_id='slct_locations', component_property='value'),
     Input(component_id='slct_neigh', component_property='value')]
 )
 def update_scatter(option_slctd, neigh_slct):
 
-    container = "Parks and Vacant Lot Locations"
+    #container = ""
 
     if "Vacant Lots" not in option_slctd:
         data = scatter_df[scatter_df['type'] == "Park"]
@@ -182,32 +185,31 @@ def update_scatter(option_slctd, neigh_slct):
                     }]))
     fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
-    return container, fig
+    return fig
 
-@app.callback(
-    [Output(component_id='output_container3', component_property='children'),
-     Output(component_id='bar', component_property='figure')],
-    [Input(component_id='health_inputs_checklist', component_property='value'),
-    Input(component_id='slct_neigh', component_property='value')]
-)
+#@app.callback(
+#    Output(component_id='bar', component_property='figure'),
+#    [Input(component_id='health_inputs_checklist', component_property='value'),
+#    Input(component_id='slct_neigh', component_property='value')]
+#)
 
-def update_bar(health_params, neigh_slct):
-    data = chs.build_full_df(health_params)
-    data.set_index('Neighborhood', inplace=True)
-    cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
-    data.loc['CHICAGO'] = data[cols_to_mean].mean()
+#def update_bar(health_params, neigh_slct):
+#    data = chs.build_full_df(health_params)
+#    data.set_index('Neighborhood', inplace=True)
+#    cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
+#    data.loc['CHICAGO'] = data[cols_to_mean].mean()
 
-    bar_x = ['Hardship Score', 'Health Risk Score', 'Number of Green Spaces', 'Number of Vacant Lots']
-    bar_y = [data['Hardship Score'].loc[neigh_slct], 
-            data['Health Risk Score'].loc[neigh_slct], 
-            data['Number of Green Spaces'].loc[neigh_slct], 
-            data['Vacant Lots'].loc[neigh_slct]]
+#    bar_x = ['Hardship Score', 'Health Risk Score', 'Number of Green Spaces', 'Number of Vacant Lots']
+#    bar_y = [data['Hardship Score'].loc[neigh_slct], 
+#            data['Health Risk Score'].loc[neigh_slct], 
+#            data['Number of Green Spaces'].loc[neigh_slct], 
+#            data['Vacant Lots'].loc[neigh_slct]]
 
-    container = []
+    #container = []
 
-    fig = px.bar(data, x=bar_x, y=bar_y)
+#    fig = px.bar(data, x=bar_x, y=bar_y)
 
-    return container, fig
+#    return fig
 
 @app.callback(Output(component_id='table', component_property='data'),
     [Input(component_id='health_inputs_checklist', component_property='value'),
@@ -216,15 +218,15 @@ def update_bar(health_params, neigh_slct):
 
 def update_table(health_params, neigh_selct):
     data = chs.build_full_df(health_params)
-    cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
-    data.loc['mean'] = data[cols_to_mean].mean()
-    data['Neighborhood'].loc['mean'] = 'CHICAGO'
-
+    if neigh_selct == 'CHICAGO':
+        cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
+        data.loc['mean'] = data[cols_to_mean].mean()
+        data['Neighborhood'].loc['mean'] = 'CHICAGO'
+    else:
+        data = chs.filter_df(data, health_params, [neigh_selct])
     output = data[data["Neighborhood"] == neigh_selct]
     output = output.round(2)
-    
     return output.to_dict('records')
-
 
 
 # ------------------------------------------------------------------------------
