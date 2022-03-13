@@ -20,25 +20,32 @@ def gen_community_areas():
 
     # https://data.cityofchicago.org/Community-Economic-Development/City-Owned-Land-Inventory/aksk-kvfp
     # Pins, square footage, and locations(lat, lon) for city-owned property
-    parcels_list_api = chicago.get("aksk-kvfp", select="pin, community_area_number, community_area_name", limit=12810,
-                               where="property_status='Owned by City'")
+    parcels_list_api = chicago.get("aksk-kvfp", select="pin, community_area_number, community_area_name, latitude, "
+                                                       "longitude", limit=12810, where="property_status="
+                                                                                       "'Owned by City'")
     # https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Community-Areas-current-/cauq-8yn6
-    community_areas_api = chicago.get("igwz-8jzy", select="the_geom, area_numbe, community", limit=77)
+    community_areas_api = chicago.get("igwz-8jzy", select="the_geom, area_numbe, community",
+                                      limit=77)
     community_areas = {}
     community_areas_num = {}
     for community in community_areas_api:
-        community_areas[community["community"]] = {'vacant_count': 0, 'vacant_sqft': 0, 'vacant_polygons': [],
-                                                   'park_count': 0, 'park_acres': 0, 'park_polygons': [],
-                                                   'census_tracts': [], 'community_area_polygons': []}
+        community_areas[community["community"]] = {'vacant_count': 0, 'vacant_sqft': 0, 'vacant_lat': None,
+                                                   'vacant_long': None, 'park_count': 0, 'park_acres': 0,
+                                                   'park_lat': None, 'park_long': None, 'census_tracts': [],
+                                                   'community_area_polygons': []}
         community_areas[community["community"]]['community_area_polygons'].append(community['the_geom'])
         community_areas_num[community['area_numbe']] = community['community']
     pin_dict = {}
+    vacants = {}
     for parcel in parcels_list_api:
         if "community_area_name" in parcel:
             if parcel["pin"] in vacant_pins:
+                vacants[parcel["pin"]] = {'latitude': parcel['latitude'], 'longitude': parcel['longitude'],
+                                'community_area_name': parcel['community_area_name']}
                 community_areas[parcel["community_area_name"]]["vacant_count"] += 1
                 pin_dict[parcel["pin"]] = parcel["community_area_name"]
 
+    '''
     # https://datacatalog.cookcountyil.gov/Property-Taxation/ccgisdata-Parcel-2021/77tz-riq7
     # Pins and shapefiles for all property polygons
     shapefiles = cook_county.get("77tz-riq7", select="pin10, the_geom", limit=612202, where="municipality='Chicago'")
@@ -50,10 +57,11 @@ def gen_community_areas():
             shapefile["pin"] += "0000"
             if shapefile["pin"] in pin_dict:
                 community_areas[pin_dict[shapefile["pin"]]]["vacant_polygons"].append(shapefile["the_geom"])
+    '''
 
     # https://data.cityofchicago.org/Parks-Recreation/Parks-Chicago-Park-District-Park-Boundaries-curren/ej32-qgdr
     # Shapefiles, location, and acreage for park polygons
-    parks_api = chicago.get("ejsh-fztr", select="the_geom, location, acres", limit=614)
+    parks_api = chicago.get("ejsh-fztr", select="the_geom, location, acres, park", limit=614)
     # Clean location & convert to latitude & longitude
     parks_api[374]['location'] = '1805 N Ridgeway Ave'
     parks_api[10]['location'] = '5531 S King Dr'
@@ -86,14 +94,17 @@ def gen_community_areas():
     parks_api[608]['location'] = '4149 S VINCENNES AVE'
     parks_api[611]['location'] = '4826 S WESTERN AVE'
     geolocator = Nominatim(user_agent="my_user_agent")
+    parks = {}
     for park in parks_api:
         if type(park['location']) == str:
             park_location = geolocator.geocode(park['location'] + ', Chicago, US')
+            parks[park['park']] = {'latitude': park_location.latitude, 'longitude': park_location.longitude}
             point = Point(park_location.longitude, park_location.latitude)
             for community in community_areas:
                 for multipolygon in community_areas[community]['community_area_polygons']:
                     for polygon in multipolygon['coordinates'][0]:
                         if point.within(Polygon(polygon)):
+                            parks[park['park']]['community_area_name'] = community
                             community_areas[community]['park_count'] += 1
                             community_areas[community]['park_acres'] += float(park['acres'])
                             community_areas[community]['park_polygons'].append(park['the_geom'])
@@ -106,6 +117,10 @@ def gen_community_areas():
             .append(census_tract["GEOID10"])
 
     # Convert lists to pandas DataFrames & combine
+    parks_df = pd.DataFrame.from_dict(parks, orient='index')
+    parks_df.to_csv('parks.csv', index=True)
+    vacants_df = pd.DataFrame.from_dict(vacants, orient='index')
+    vacants_df.to_csv('vacants.csv', index=True)
     community_areas_df = pd.DataFrame.from_dict(community_areas, orient='index')
     community_areas_df.reset_index(inplace=True)
     community_areas_df = community_areas_df.rename(columns = {'index':'Neighborhood'})

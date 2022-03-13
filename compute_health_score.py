@@ -20,6 +20,8 @@ def compute_health_score(df, metrics):
     that average more heavily if the life expectancy of this neighborhood is 
     below the average life expectancy in Chicago.
     '''
+    assert len(metrics) > 1
+    
     if "Life Expectancy" in metrics:
         # Weight metrics by whether life expectancy is above or below the mean
         early_death = df["Life Expectancy"] < AVG_LIFE_EXP
