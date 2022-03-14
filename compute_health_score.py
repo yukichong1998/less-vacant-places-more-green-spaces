@@ -67,7 +67,7 @@ def filter_df(df, metrics, neighborhood):
         - (pandas dataframe) Filtered dataframe by health metrics and 
         neighborhood selected
     '''
-    cols_to_keep = ["community_area", "Neighborhood", "Health Risk Score"] + \
+    cols_to_keep = ["Neighborhood", "Health Risk Score"] + \
                     metrics + OTHER_INDICATORS
     subset = df[cols_to_keep]
     subset = subset[subset["Neighborhood"].isin(neighborhood)]
