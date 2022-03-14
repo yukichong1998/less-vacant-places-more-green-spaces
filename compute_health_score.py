@@ -6,7 +6,7 @@ import data_cleaning as dc
 
 
 HEALTH_COLS = ["stcotr_fips", "est"]
-life_expectancy = dc.load_data("health_life_expectancy.csv", HEALTH_COLS, 
+life_expectancy = dc.load_data("data/health_life_expectancy.csv", HEALTH_COLS, 
                                "Life Expectancy")
 AVG_LIFE_EXP = life_expectancy["Life Expectancy"].mean()
 OTHER_INDICATORS = ["Hardship Score", "Vacant Lots", "Number of Green Spaces",

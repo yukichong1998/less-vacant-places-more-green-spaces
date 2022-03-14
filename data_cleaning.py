@@ -19,15 +19,15 @@ VAR_NAMES = {
     }
 
 CENSUS_TRACT_COLS = ["GEOID10", "COMMAREA"]
-CENSUS_TRACT_FILENAME = 'census_tracts.csv'
+CENSUS_TRACT_FILENAME = 'data/census_tracts.csv'
 COMM_AREA_COLS = ["AREA_NUMBER", "COMMUNITY"]
-COMM_AREA_FILENAME = 'comm_areas.csv'
+COMM_AREA_FILENAME = 'data/comm_areas.csv'
 
 HARDSHIP_COLS = ["GEOID", "HDX_2015-2019"]
-HARDSHIP_FILENAME = 'hardship_index.csv'
+HARDSHIP_FILENAME = 'data/hardship_index.csv'
 
 PARKS_LOTS_COLS = ["Neighborhood", "vacant_count", "park_count", "park_acres", "park_polygons"]
-PARKS_LOTS_FILENAME = 'community_areas.csv'
+PARKS_LOTS_FILENAME = 'data/community_areas.csv'
 
 HEALTH_COLS = ["stcotr_fips", "est"]
 HEALTH_INDICATORS = ["Physical Distress", "Mental Distress", "Diabetes", 
@@ -50,11 +50,11 @@ def merge_health_dfs():
     Merges health dataframes on census tract unique identifier and cleans the
     data by replacing empty NaN values with column mean.
     '''
-    physical_distress = load_data("health_physical_distress.csv", HEALTH_COLS, "Physical Distress")
-    mental_distress = load_data("health_mental_distress.csv", HEALTH_COLS, "Mental Distress")
-    diabetes = load_data("health_diabetes.csv", HEALTH_COLS, "Diabetes")
-    hbp = load_data("health_high_blood_pressure.csv", HEALTH_COLS, "High Blood Pressure")
-    life_expectancy = load_data("health_life_expectancy.csv", HEALTH_COLS, "Life Expectancy")
+    physical_distress = load_data("data/health_physical_distress.csv", HEALTH_COLS, "Physical Distress")
+    mental_distress = load_data("data/health_mental_distress.csv", HEALTH_COLS, "Mental Distress")
+    diabetes = load_data("data/health_diabetes.csv", HEALTH_COLS, "Diabetes")
+    hbp = load_data("data/health_high_blood_pressure.csv", HEALTH_COLS, "High Blood Pressure")
+    life_expectancy = load_data("data/health_life_expectancy.csv", HEALTH_COLS, "Life Expectancy")
 
     health_data = physical_distress.merge(mental_distress).merge(diabetes).merge(hbp).merge(life_expectancy)
     
@@ -63,17 +63,6 @@ def merge_health_dfs():
         health_data[i].fillna(health_data[i].mean(), inplace=True)
         health_data[i] = health_data[i].round(1)
     return health_data
-
-# def merge_all_dfs():
-#     '''
-#     Merges health, hardship, lots and green spaces dataframes on census tract
-#     unique identifier.
-#     '''
-#     hardship = load_data(HARDSHIP_FILENAME, HARDSHIP_COLS)
-#     health = merge_health_dfs()
-#     indicator_dfs = [hardship, health]
-#     merged_df = reduce(lambda left,right: pd.merge(left,right,on='census_tract'), indicator_dfs)
-#     return merged_df
 
 
 def tract_to_neighborhood():
