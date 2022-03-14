@@ -6,8 +6,11 @@ import json
 import compute_health_score as chs
 import scatterplot_data as sd
 import data_cleaning as dc
+from dash.exceptions import PreventUpdate
+import bar_chart
 
 pd.options.mode.chained_assignment = None
+df = dc.tract_to_neighborhood()
 
 external_stylesheets = [
     {
@@ -126,10 +129,27 @@ app.layout = html.Div([
     html.H4("Area of Green Spaces (acres)", className="subheader-title"),
 
     html.Br(),
+    dcc.Dropdown(id="slct_second_neigh",
+            #value="ROGERS PARK",
+            style={'width': "50%"}
+            ),
+
+    html.Div([
+            dcc.Graph(id='bar_hardship', figure={},
+                style={'width': '20%', 'display': 'inline-block'}),
+            dcc.Graph(id='bar_healthrisk', figure={},
+                style={'width': '20%', 'display': 'inline-block'}),
+            dcc.Graph(id='bar_vacantlots', figure={},
+                style={'width': '20%', 'display': 'inline-block'}),
+            dcc.Graph(id='bar_greenspaces', figure={},
+                style={'width': '20%', 'display': 'inline-block'}),
+            dcc.Graph(id='bar_areagreenspaces', figure={},
+                style={'width': '20%', 'display': 'inline-block'})
+    ]),
+
     html.Div([
         dash_table.DataTable(
             id='table',
-            columns=[{'id': c, 'name': c} for c in table_cols],
             style_cell={
                 'fontSize':14, 
                 'font-family': 'sans-serif', 
@@ -151,33 +171,38 @@ app.layout = html.Div([
     Input(component_id='health_inputs_checklist', component_property='value')]
 )
 def update_choro(option_slctd, health_params):
+    if not option_slctd:
+        raise PreventUpdate
+    else:
+        with open('Community_Areas.geojson') as fin:
+            neighborhoods = json.load(fin)
 
-    with open('Community_Areas.geojson') as fin:
-        neighborhoods = json.load(fin)
-
-    choro_df = chs.build_full_df(health_params)
-   
-    fig = px.choropleth_mapbox(choro_df, geojson=neighborhoods, locations='Neighborhood', 
-                            featureidkey="properties.community", 
-                            color=option_slctd,
-                            color_continuous_scale="algae",
-                            mapbox_style="carto-positron",
-                            zoom=9, center = {"lat": 41.81, "lon": -87.7},
-                            opacity=0.5,
-                            labels={'df':option_slctd}
-                          )
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
-  
-    return fig
+        choro_df = chs.append_health_score(df, health_params)
+    
+        fig = px.choropleth_mapbox(choro_df, geojson=neighborhoods, locations='Neighborhood', 
+                                featureidkey="properties.community", 
+                                color=option_slctd,
+                                color_continuous_scale="algae",
+                                mapbox_style="carto-positron",
+                                zoom=9, center = {"lat": 41.81, "lon": -87.7},
+                                opacity=0.5,
+                                labels={'df':option_slctd}
+                            )
+        fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+    
+        return fig
 
 @app.callback(
     Output(component_id='health_inputs_container', component_property='style'),
     Input(component_id='slct_parameter', component_property='value'))
 def show_health_inputs_checklist(parameter):
-    if "Health Risk Score" in parameter:
-        return {'display': 'block'}
+    if not parameter:
+        raise PreventUpdate
     else:
-        return {'display':'none'}
+        if "Health Risk Score" in parameter:
+            return {'display': 'block'}
+        else:
+            return {'display':'none'}
 
 @app.callback(
     Output(component_id='chicago_map_scatter', component_property='figure'),
@@ -185,57 +210,138 @@ def show_health_inputs_checklist(parameter):
     Input(component_id='slct_neigh', component_property='value')]
 )
 def update_scatter(option_slctd, neigh_slct):
-
-    if "Vacant Lots" not in option_slctd:
-        data = scatter_df[scatter_df['Land Use'] == "Park"]
-    elif "Parks" not in option_slctd:
-        data = scatter_df[scatter_df['Land Use'] == "Vacant Lot"]
+    if not neigh_slct:
+        raise PreventUpdate
     else:
-        data = scatter_df
+        if "Vacant Lots" not in option_slctd:
+            data = scatter_df[scatter_df['Land Use'] == "Park"]
+        elif "Parks" not in option_slctd:
+            data = scatter_df[scatter_df['Land Use'] == "Vacant Lot"]
+        else:
+            data = scatter_df
 
-    zoom_opt = boundaries.loc[neigh_slct]["Zoom"]
-    lat_opt = boundaries.loc[neigh_slct]["Lat"]
-    lon_opt = boundaries.loc[neigh_slct]["Lon"]
+        zoom_opt = boundaries.loc[neigh_slct]["Zoom"]
+        lat_opt = boundaries.loc[neigh_slct]["Lat"]
+        lon_opt = boundaries.loc[neigh_slct]["Lon"]
 
-    with open('Community_Areas.geojson') as fin:
-        neighborhoods = json.load(fin)
+        with open('Community_Areas.geojson') as fin:
+            neighborhoods = json.load(fin)
 
-    fig = px.scatter_mapbox(data, lat="latitude", lon="longitude", color="Land Use", hover_name="name", hover_data=["community_area_name"], 
-                            color_discrete_map={"Park":"green", "Vacant Lot":"gray"}, size='normalized_size')
-    fig.update_layout(mapbox=go.layout.Mapbox(
-                    style="carto-positron",
-                    zoom=zoom_opt, 
-                    center_lat = lat_opt,
-                    center_lon = lon_opt,
-                    layers=[{
-                        'sourcetype': 'geojson',
-                        'source': neighborhoods,
-                        'type': "line",
-                        'opacity': 0.5
-                    }]))
-    fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
+        fig = px.scatter_mapbox(data, lat="latitude", lon="longitude", color="Land Use", hover_name="name", hover_data=["community_area_name"], 
+                                color_discrete_map={"Park":"green", "Vacant Lot":"gray"}, size='normalized_size')
+        fig.update_layout(mapbox=go.layout.Mapbox(
+                        style="carto-positron",
+                        zoom=zoom_opt, 
+                        center_lat = lat_opt,
+                        center_lon = lon_opt,
+                        layers=[{
+                            'sourcetype': 'geojson',
+                            'source': neighborhoods,
+                            'type': "line",
+                            'opacity': 0.5
+                        }]))
+        fig.update_layout(margin={"r":0,"t":0,"l":0,"b":0})
 
-    return fig
+        return fig
+
+@app.callback(
+    Output(component_id='slct_second_neigh', component_property='options'),
+    Input(component_id='slct_neigh', component_property='value')
+    )
+def update_second_neigh(first_neigh):
+    neighborhoods = [neigh for neigh in boundaries.index if neigh != first_neigh and neigh != 'CHICAGO']
+    return neighborhoods
+
+# Bar chart for Hardship Score
+@app.callback(
+    Output(component_id='bar_hardship', component_property='figure'),
+    [Input(component_id='health_inputs_checklist', component_property='value'),
+    Input(component_id='slct_neigh', component_property='value'),
+    Input(component_id='slct_second_neigh', component_property='value')]
+)
+def update_hardship_bar(health_params, first_neigh, second_neigh):
+    if not second_neigh:
+        raise PreventUpdate
+    else:
+        data = chs.append_health_score(df, health_params)
+        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Hardship Score')
+
+# Bar chart for Health Risk Score
+@app.callback(
+    Output(component_id='bar_healthrisk', component_property='figure'),
+    [Input(component_id='health_inputs_checklist', component_property='value'),
+    Input(component_id='slct_neigh', component_property='value'),
+    Input(component_id='slct_second_neigh', component_property='value')]
+)
+def update_healthrisk_bar(health_params, first_neigh, second_neigh):
+    if not second_neigh:
+        raise PreventUpdate
+    else:
+        data = chs.append_health_score(df, health_params)
+        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Health Risk Score')
+
+# Bar chart for Vacant Lots
+@app.callback(
+    Output(component_id='bar_vacantlots', component_property='figure'),
+    [Input(component_id='health_inputs_checklist', component_property='value'),
+    Input(component_id='slct_neigh', component_property='value'),
+    Input(component_id='slct_second_neigh', component_property='value')]
+)
+def update_vacantlots_bar(health_params, first_neigh, second_neigh):
+    if not second_neigh:
+        raise PreventUpdate
+    else:
+        data = chs.append_health_score(df, health_params)
+        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Vacant Lots')
+
+# Bar chart for Green Spaces
+@app.callback(
+    Output(component_id='bar_greenspaces', component_property='figure'),
+    [Input(component_id='health_inputs_checklist', component_property='value'),
+    Input(component_id='slct_neigh', component_property='value'),
+    Input(component_id='slct_second_neigh', component_property='value')]
+)
+def update_greenspaces_bar(health_params, first_neigh, second_neigh):
+    if not second_neigh:
+        raise PreventUpdate
+    else:
+        data = chs.append_health_score(df, health_params)
+        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Number of Green Spaces')
+
+# Bar chart for Area of Green Spaces
+@app.callback(
+    Output(component_id='bar_areagreenspaces', component_property='figure'),
+    [Input(component_id='health_inputs_checklist', component_property='value'),
+    Input(component_id='slct_neigh', component_property='value'),
+    Input(component_id='slct_second_neigh', component_property='value')]
+)
+def update_areagreenspaces_bar(health_params, first_neigh, second_neigh):
+    if not second_neigh:
+        raise PreventUpdate
+    else:
+        data = chs.append_health_score(df, health_params)
+        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Area of Green Spaces')
 
 
 @app.callback(Output(component_id='table', component_property='data'),
     [Input(component_id='health_inputs_checklist', component_property='value'),
     Input(component_id='slct_neigh', component_property='value')]
 )
-
 def update_table(health_params, neigh_selct):
-    data = chs.build_full_df(health_params)
-    if neigh_selct == 'CHICAGO':
-        cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
-        data.loc['mean'] = data[cols_to_mean].mean()
-        data['Neighborhood'].loc['mean'] = 'CHICAGO'
+    if not neigh_selct:
+        raise PreventUpdate
     else:
-        data = chs.filter_df(data, health_params, [neigh_selct])
-    output = data[data["Neighborhood"] == neigh_selct]
-    output = output.round(2)
-    return output.to_dict('records')
+        data = chs.append_health_score(df, health_params)
+        if neigh_selct == 'CHICAGO':
+            cols_to_mean = [c for c in table_cols if c != "Neighborhood"]
+            data.loc['mean'] = data[cols_to_mean].mean()
+            data['Neighborhood'].loc['mean'] = 'CHICAGO'
+        output = chs.filter_df(data, health_params, [neigh_selct])
+        output = output.round(2)
+
+        return output.to_dict('records')
 
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':
-    app.run_server(debug=True, port=8051)
+    app.run_server(debug=True, port=8053)
