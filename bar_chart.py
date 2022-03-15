@@ -12,6 +12,13 @@ TABLE_COLS = ["Neighborhood", "Hardship Score",
             "Number of Green Spaces", 
             "Area of Green Spaces"]
 
+COLORS = {"Hardship Score": "#E8B4B8",
+        "Health Risk Score": "#EED6D3",
+        "Vacant Lots": "#A49393",
+        "Number of Green Spaces": "#837126",
+        "Area of Green Spaces": "#634F40"
+        }
+
 def create_bar_chart(data, health_params, first_neigh, second_neigh, y_param):
     if first_neigh == "CHICAGO":
         cols_to_mean = [c for c in TABLE_COLS if c != "Neighborhood"]
@@ -25,10 +32,13 @@ def create_bar_chart(data, health_params, first_neigh, second_neigh, y_param):
     fig = px.bar(fltr_data, x=bar_x, y=bar_y)
     fig.update_layout(width=300,
                     height=300,
-                    margin=dict(l=20, r=20, t=30, b=20),
+                    margin=dict(l=20, r=20, t=40, b=10),
                     title=y_param,
                     xaxis_title="",
                     yaxis_title="",
-                    font={'size':9}
+                    font={'size':10}
                     )
+    fig.update_traces(marker_color=COLORS[y_param],
+                        width=0.6)
+    
     return fig
