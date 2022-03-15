@@ -6,6 +6,36 @@ from pyproj import Geod
 from shapely import wkt
 
 def gen_community_areas():
+    """
+    Pulls data from City of Chicago and Cook County Data portals, then cleans and transforms the data to be used for
+    analysis, then generates the community_areas.csv, parks.csv, and vacants.csv files.
+    
+    Inputs:
+        None
+    
+    Outputs:
+        community_areas: csv file containing the following columns 
+            Neighborhood: (str) community area
+            vacant_count: (int) total count of city-owned vacancies by community area
+            vacant_acres: (float) total amount of city-owned vacancy acreage by community area
+            park_count: (int) total count of parks by community area
+            park_acres: (float) total amount of park acreage by community area
+            census_tracts: (list) census tract polygons by community area
+            community_area_polygons: (list) polygons within community area
+            park_polygons: (list) park polygons within community area
+        parks: csv file containing the following columns
+            index: (str) park name
+            latitude: (float)
+            longitude: (float)
+            size: (float) normalized park acreage
+            community_area_name: (str)
+        vacants: csv file containing the following columns
+            index: (str) uniquely identifying pin
+            latitude: (int)
+            longitude: (int)
+            community_area_name: (str)
+            size: (float) normalized lot acres
+    """
 
     # Access Cook County Data Portal API
     cook_county = Socrata("datacatalog.cookcountyil.gov", None)
