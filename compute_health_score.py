@@ -6,7 +6,7 @@ import data_cleaning as dc
 
 
 HEALTH_COLS = ["stcotr_fips", "est"]
-life_expectancy = dc.load_data("data/health_life_expectancy.csv", HEALTH_COLS, 
+life_expectancy = dc.load_data("health_life_expectancy.csv", HEALTH_COLS, 
                                "Life Expectancy")
 AVG_LIFE_EXP = life_expectancy["Life Expectancy"].mean()
 OTHER_INDICATORS = ["Hardship Score", "Vacant Lots", "Number of Green Spaces",
@@ -67,7 +67,7 @@ def filter_df(df, metrics, neighborhood):
         - (pandas dataframe) Filtered dataframe by health metrics and 
         neighborhood selected
     '''
-    cols_to_keep = ["Neighborhood", "Health Risk Score"] + \
+    cols_to_keep = ["community_area", "Neighborhood", "Health Risk Score"] + \
                     metrics + OTHER_INDICATORS
     subset = df[cols_to_keep]
     subset = subset[subset["Neighborhood"].isin(neighborhood)]
