@@ -1,3 +1,7 @@
+'''
+Module for creating bar charts
+'''
+
 import plotly.express as px
 import compute_health_score as chs
 
@@ -19,7 +23,20 @@ COLORS = {"Hardship Score": "#E8B4B8",
         "Area of Green Spaces": "#634F40"
         }
 
-def create_bar_chart(data, health_params, first_neigh, second_neigh, y_param):
+def create_bar_chart(data, health_params, neighborhoods, y_param):
+    '''
+    Creates a bar chart comparing two neighborhoods on a given y_parameter.
+    Inputs:
+        data (Pandas DataFrame): full dataset with all columns
+        health_params (list of str): health indicators selected by the user
+        neighborhoods (tuple of str): two neighborhoods to compare
+        y_param (str): the metric to compare the neighborhoods on:
+            Hardship Score, Health Risk Score, Vacant Lots, Number of Green Spaces,
+            or Area of Green Spaces
+    
+    Returns: Plotly Express bar chart        
+    '''
+    first_neigh, second_neigh = neighborhoods
     if first_neigh == "CHICAGO":
         cols_to_mean = [c for c in TABLE_COLS if c != "Neighborhood"]
         data.loc['CHICAGO'] = data[cols_to_mean].mean()

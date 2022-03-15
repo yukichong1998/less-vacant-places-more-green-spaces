@@ -1,3 +1,7 @@
+'''
+Module creating the interactive dashboard
+'''
+
 import pandas as pd
 import json
 import plotly.express as px  
@@ -179,7 +183,7 @@ app.layout = html.Div([
 
 
 # ------------------------------------------------------------------------------
-# Connect the Plotly graphs with Dash Components
+# Update graph showing distribution of selected parameter across Chicago
 @app.callback(
     Output(component_id='chicago_map_choro', component_property='figure'),
     [Input(component_id='slct_parameter', component_property='value'),
@@ -207,6 +211,9 @@ def update_choro(option_slctd, health_params):
     
         return fig
 
+# Checklist for selecting health indicators to be included in calculation
+# of Health Risk Score is dependent on selection of Health Risk Score as
+# a map layer
 @app.callback(
     Output(component_id='health_inputs_container', component_property='style'),
     Input(component_id='slct_parameter', component_property='value'))
@@ -219,6 +226,8 @@ def show_health_inputs_checklist(parameter):
         else:
             return {'display':'none'}
 
+# Update graph showing locations of green spaces and/or vacant lots
+# for a selected neighborhood
 @app.callback(
     Output(component_id='chicago_map_scatter', component_property='figure'),
     [Input(component_id='slct_locations', component_property='value'),
@@ -259,6 +268,8 @@ def update_scatter(option_slctd, neigh_slct):
 
         return fig
 
+# Update dropdown list options for selecting a second neighborhood to
+# exclude the first selected neighborhood
 @app.callback(
     Output(component_id='slct_second_neigh', component_property='options'),
     Input(component_id='slct_neigh', component_property='value')
@@ -279,7 +290,7 @@ def update_hardship_bar(health_params, first_neigh, second_neigh):
         raise PreventUpdate
     else:
         data = chs.append_health_score(df, health_params)
-        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Hardship Score')
+        return bar_chart.create_bar_chart(data, health_params, (first_neigh, second_neigh), 'Hardship Score')
 
 # Bar chart for Health Risk Score
 @app.callback(
@@ -293,7 +304,7 @@ def update_healthrisk_bar(health_params, first_neigh, second_neigh):
         raise PreventUpdate
     else:
         data = chs.append_health_score(df, health_params)
-        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Health Risk Score')
+        return bar_chart.create_bar_chart(data, health_params, (first_neigh, second_neigh), 'Health Risk Score')
 
 # Bar chart for Vacant Lots
 @app.callback(
@@ -307,7 +318,7 @@ def update_vacantlots_bar(health_params, first_neigh, second_neigh):
         raise PreventUpdate
     else:
         data = chs.append_health_score(df, health_params)
-        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Vacant Lots')
+        return bar_chart.create_bar_chart(data, health_params, (first_neigh, second_neigh), 'Vacant Lots')
 
 # Bar chart for Green Spaces
 @app.callback(
@@ -321,7 +332,7 @@ def update_greenspaces_bar(health_params, first_neigh, second_neigh):
         raise PreventUpdate
     else:
         data = chs.append_health_score(df, health_params)
-        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Number of Green Spaces')
+        return bar_chart.create_bar_chart(data, health_params, (first_neigh, second_neigh), 'Number of Green Spaces')
 
 # Bar chart for Area of Green Spaces
 @app.callback(
@@ -335,9 +346,9 @@ def update_areagreenspaces_bar(health_params, first_neigh, second_neigh):
         raise PreventUpdate
     else:
         data = chs.append_health_score(df, health_params)
-        return bar_chart.create_bar_chart(data, health_params, first_neigh, second_neigh, 'Area of Green Spaces')
+        return bar_chart.create_bar_chart(data, health_params, (first_neigh, second_neigh), 'Area of Green Spaces')
 
-
+# Table of all indicators for selected neighborhood and health indicators
 @app.callback(Output(component_id='table', component_property='data'),
     [Input(component_id='health_inputs_checklist', component_property='value'),
     Input(component_id='slct_neigh', component_property='value'),
