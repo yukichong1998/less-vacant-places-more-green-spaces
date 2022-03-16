@@ -1,6 +1,8 @@
 Project Installation:
 1. Clone the repo to your local hard drive (or server):
-“git clone https://github.com/uchicago-CAPP30122-win-2022/proj-less-parking-more-parks”
+'''
+git clone https://github.com/uchicago-CAPP30122-win-2022/proj-less-parking-more-parks
+'''
 
 2. Go to the cloned repository:
 "cd ./proj-less-parking-more-parks”
