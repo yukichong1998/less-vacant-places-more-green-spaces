@@ -12,7 +12,7 @@ Project Installation:
 “source env/bin/activate”
 
 5. Run the program:
-“run_program.sh”
+“bash run_program.sh”
 
 6. Go to the returned address in a web browser:
 Example: “Dash is running on http://127.0.0.1:8053/”
