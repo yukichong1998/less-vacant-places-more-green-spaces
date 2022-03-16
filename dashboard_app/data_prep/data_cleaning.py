@@ -36,6 +36,16 @@ ALL_INDICATORS = ["Hardship Score", "Physical Distress", "Mental Distress",
 
 
 def load_data(filename, col_list, col_name=None):
+    '''
+    Load csv file and rename columns.
+    
+    Inputs:
+        - filename: (CSV file)
+        - col_list: (list) Column names
+    
+    Returns:
+        - (pandas dataframe) Dataframe
+    '''
     df = pd.read_csv(filename, header=0, usecols=col_list)
     if col_name:
         df = df.rename(columns = {"stcotr_fips":"census_tract", "est": col_name})
