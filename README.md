@@ -5,7 +5,7 @@ Project Installation:
 2. Go to the cloned repository:
 "cd ./proj-less-parking-more-parks”
 
-3. Go to the root folder and install the virtual environment:
+3. Install the virtual environment:
 “bash install.sh”
 
 4. Activate the virtual environment:
@@ -17,7 +17,11 @@ Project Installation:
 6. Go to the returned address in a web browser:
 Example: “Dash is running on http://127.0.0.1:8053/”
 
-7. (Optional) Generate the input data files:
+7. To exit Dash: "ctrl + c"
+
+8. To exit virtual environment "deactivate"
+
+9. (Optional) Generate the input data files:
 “cd dashboard_app/data_prep”
 “python3 data_extraction.py”
 
