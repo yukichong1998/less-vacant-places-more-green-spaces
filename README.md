@@ -10,13 +10,19 @@ cd ./proj-less-parking-more-parks
 ```
 
 3. Install the virtual environment:
-“bash install.sh”
+```
+bash install.sh
+```
 
 4. Activate the virtual environment:
-“source env/bin/activate”
+```
+source env/bin/activate
+```
 
 5. Run the program:
-“bash run_program.sh”
+```
+bash run_program.sh
+```
 
 6. Go to the returned address in a web browser:
 Example: “Dash is running on http://127.0.0.1:8053/”
@@ -26,8 +32,10 @@ Example: “Dash is running on http://127.0.0.1:8053/”
 8. To exit virtual environment "deactivate"
 
 9. (Optional) Generate the input data files:
-“cd dashboard_app/data_prep”
-“python3 data_extraction.py”
+```
+cd dashboard_app/data_prep
+python3 data_extraction.py
+```
 
 Project Interaction:
 1. Choose are parameter from the drop down to display on the choropleth map
