@@ -6,28 +6,57 @@ from pyproj import Geod
 from shapely import wkt
 
 def gen_community_areas():
+    """
+    Pulls data from City of Chicago and Cook County Data portals, then cleans and transforms the data to be used for
+    analysis, then generates the community_areas.csv, parks.csv, and vacants.csv files.
+    
+    Inputs:
+        None
+    
+    Outputs:
+        community_areas: csv file containing the following columns 
+            Neighborhood: (str) community area
+            vacant_count: (int) total count of city-owned vacancies by community area
+            vacant_acres: (float) total amount of city-owned vacancy acreage by community area
+            park_count: (int) total count of parks by community area
+            park_acres: (float) total amount of park acreage by community area
+            census_tracts: (list) census tract polygons by community area
+            community_area_polygons: (list) polygons within community area
+            park_polygons: (list) park polygons within community area
+        parks: csv file containing the following columns
+            index: (str) park name
+            latitude: (float)
+            longitude: (float)
+            size: (float) normalized park acreage
+            community_area_name: (str)
+        vacants: csv file containing the following columns
+            index: (str) uniquely identifying pin
+            latitude: (int)
+            longitude: (int)
+            community_area_name: (str)
+            size: (float) normalized lot acres
+    """
 
-    # Access Cook County Data Portal API
+    # Access Cook County & Chicago Data Portal API
     cook_county = Socrata("datacatalog.cookcountyil.gov", None)
-    # Access City of Chicago Data Portal API
     chicago = Socrata("data.cityofchicago.org", None)
-
+    
+    # Pull Cook County data on the classifications of all land parcels in Chicago
     # https://datacatalog.cookcountyil.gov/Property-Taxation/ccgisdata-Parcel-2021/77tz-riq7
-    # Pins for vacant land, including sideyards & unclassified land
     vacant_api = cook_county.get("tnes-dgyi", select="pin", limit=2032408, where="class=0 OR class=100 OR class=190 OR "
                                                                                  "class=000 OR class=241")
     vacant_pins = set()
     for vacant in vacant_api:
         vacant_pins.add(vacant['pin'])
-
+    
+    # Pull Chicago data on location and communitay area of all city-owned land parcels
     # https://data.cityofchicago.org/Community-Economic-Development/City-Owned-Land-Inventory/aksk-kvfp
-    # Pins, square footage, and locations(lat, lon) for city-owned property
     parcels_list_api = chicago.get("aksk-kvfp", select="pin, community_area_number, community_area_name, latitude, "
                                                        "longitude", limit=12810, where="property_status="
                                                                                        "'Owned by City'")
+    # Pull Chicago data on communitay area boundaries
     # https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Community-Areas-current-/cauq-8yn6
-    community_areas_api = chicago.get("igwz-8jzy", select="the_geom, area_numbe, community",
-                                      limit=77)
+    community_areas_api = chicago.get("igwz-8jzy", select="the_geom, area_numbe, community", limit=77)
     community_areas = {}
     community_areas_num = {}
     for community in community_areas_api:
@@ -45,11 +74,11 @@ def gen_community_areas():
                                 'community_area_name': parcel['community_area_name'], 'size': None}
                 community_areas[parcel["community_area_name"]]["vacant_count"] += 1
                 pin_dict[parcel["pin"]] = parcel["community_area_name"]
-
-
+    
+    # Pull Cook County data on the boundaries of all land parcels in Chicago
     # https://datacatalog.cookcountyil.gov/Property-Taxation/ccgisdata-Parcel-2021/77tz-riq7
-    # Pins and shapefiles for all property polygons
     shapefiles = cook_county.get("77tz-riq7", select="pin10, the_geom", limit=612202, where="municipality='Chicago'")
+    # Use boundaries of land parcels to calculate total area by community area (no alternative data available)
     geod = Geod(ellps="WGS84")
     for shapefile in shapefiles:
         if "pin10" in shapefile:
@@ -63,10 +92,10 @@ def gen_community_areas():
                         abs(geod.geometry_area_perimeter(Polygon(polygon[0]))[0])*0.000247105
                 vacants[shapefile["pin"]]["size"] = community_areas[pin_dict[shapefile["pin"]]]["vacant_acres"]
 
+    # Pull Chicago data on the boundaries, address, acreage and name of all parks
     # https://data.cityofchicago.org/Parks-Recreation/Parks-Chicago-Park-District-Park-Boundaries-curren/ej32-qgdr
-    # Shapefiles, location, and acreage for park polygons
     parks_api = chicago.get("ejsh-fztr", select="the_geom, location, acres, park", limit=614)
-    # Clean location & convert to latitude & longitude
+    # Clean address & convert to latitude & longitude (no singular lat long data available)
     parks_api[374]['location'] = '1805 N Ridgeway Ave'
     parks_api[10]['location'] = '5531 S King Dr'
     parks_api[28]['location'] = '1400 S LINN WHITE DR'
@@ -114,14 +143,14 @@ def gen_community_areas():
                             community_areas[community]['park_count'] += 1
                             community_areas[community]['park_acres'] += float(park['acres'])
 
+    # Pull Chicago data on the boundaries of all census tracts and the community areas they are within for matching
     # https://data.cityofchicago.org/Facilities-Geographic-Boundaries/Boundaries-Census-Tracts-2010/5jrd-6zik
-    # Shapefiles for census tract polygons
     census_tracts_api = chicago.get("74p9-q2aq", select="commarea, GEOID10")
     for census_tract in census_tracts_api:
         community_areas[community_areas_num[census_tract["commarea"]]]["census_tracts"]\
             .append(census_tract["GEOID10"])
-
-    # Convert lists to pandas DataFrames & combine
+    
+    # Convert lists to pandas DataFrames & generate csv files
     parks_df = pd.DataFrame.from_dict(parks, orient='index')
     parks_df["size"] = parks_df["size"] / parks_df["size"].abs().max()
     parks_df.to_csv('parks.csv', index=True)
@@ -132,5 +161,6 @@ def gen_community_areas():
     community_areas_df.reset_index(inplace=True)
     community_areas_df = community_areas_df.rename(columns = {'index':'Neighborhood'})
     community_areas_df.to_csv('community_areas.csv', index=True)
-
+    
+    # Return main dataframe (for optional use)
     return community_areas_df
