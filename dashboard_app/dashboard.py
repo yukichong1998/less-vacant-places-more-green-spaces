@@ -8,10 +8,10 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import Dash, dcc, html, Input, Output, dash_table
 from dash.exceptions import PreventUpdate
-import dashboard_app.data_prep.compute_health_score as chs
-import scatterplot_data as sd
-import dashboard_app.data_prep.data_cleaning as dc
-import bar_chart
+import data_prep.compute_health_score as chs
+import data_viz.scatterplot_data as sd
+import data_prep.data_cleaning as dc
+import data_viz.bar_chart
 
 pd.options.mode.chained_assignment = None
 df = dc.tract_to_neighborhood()
@@ -193,7 +193,7 @@ def update_choro(option_slctd, health_params):
     if not option_slctd:
         raise PreventUpdate
     else:
-        with open('Community_Areas.geojson') as fin:
+        with open('data_prep/data/Community_Areas.geojson') as fin:
             neighborhoods = json.load(fin)
 
         choro_df = chs.append_health_score(df, health_params)
@@ -248,7 +248,7 @@ def update_scatter(option_slctd, neigh_slct):
         lat_opt = boundaries.loc[neigh_slct]["Lat"]
         lon_opt = boundaries.loc[neigh_slct]["Lon"]
 
-        with open('Community_Areas.geojson') as fin:
+        with open('data_prep/data/Community_Areas.geojson') as fin:
             neighborhoods = json.load(fin)
 
         fig = px.scatter_mapbox(data, lat="latitude", lon="longitude", color="Land Use", hover_name="name", hover_data=["community_area_name"], 
