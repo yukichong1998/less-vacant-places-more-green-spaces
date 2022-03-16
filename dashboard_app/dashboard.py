@@ -11,7 +11,7 @@ from dash.exceptions import PreventUpdate
 import data_prep.compute_health_score as chs
 import data_viz.scatterplot_data as sd
 import data_prep.data_cleaning as dc
-import data_viz.bar_chart
+import data_viz.bar_chart as bar_chart
 
 pd.options.mode.chained_assignment = None
 df = dc.tract_to_neighborhood()
