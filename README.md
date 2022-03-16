@@ -18,5 +18,5 @@ Project Installation:
 Example: “Dash is running on http://127.0.0.1:8053/”
 
 7. (Optional) Generate the input data files:
-“python3 data_extraction_and_cleaning.py”
+“python3 data_extraction.py”
 
