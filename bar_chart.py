@@ -1,6 +1,4 @@
 '''
-
-Testing new change
 Module for creating bar charts
 '''
 
@@ -18,8 +16,8 @@ TABLE_COLS = ["Neighborhood", "Hardship Score",
             "Number of Green Spaces", 
             "Area of Green Spaces"]
 
-COLORS = {"Hardship Score": "#E8B4B8",
-        "Health Risk Score": "#EED6D3",
+COLORS = {"Hardship Score": "#40594C",
+        "Health Risk Score": "#855858",
         "Vacant Lots": "#A49393",
         "Number of Green Spaces": "#837126",
         "Area of Green Spaces": "#634F40"
