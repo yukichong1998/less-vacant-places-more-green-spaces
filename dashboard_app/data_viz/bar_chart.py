@@ -3,7 +3,7 @@ Module for creating bar charts
 '''
 
 import plotly.express as px
-import compute_health_score as chs
+import data_prep.compute_health_score as chs
 
 TABLE_COLS = ["Neighborhood", "Hardship Score", 
             "Mental Distress", 
