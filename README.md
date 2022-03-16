@@ -23,6 +23,6 @@ Example: “Dash is running on http://127.0.0.1:8053/”
 
 Project Interaction:
 1. Choose are parameter from the drop down to display on the choropleth map
-2. Choose a Neighborhood from the drop down to display on the scatterplot map
-3. Choose a 2nd Neighbood from the drop down to create bar charts comparing the 2 selected neighborhoods
+2. Choose a neighborhood from the drop down to display on the scatterplot map
+3. Choose a 2nd neighborbood from the drop down to create bar charts comparing the 2 selected neighborhoods
 
