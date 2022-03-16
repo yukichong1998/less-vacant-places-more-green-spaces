@@ -38,7 +38,7 @@ python3 data_extraction.py
 ```
 
 Project Interaction:
-1. Choose are parameter from the drop down to display on the choropleth map
-2. Choose a neighborhood from the drop down to display on the scatterplot map
-3. Choose a 2nd neighborbood from the drop down to create bar charts comparing the 2 selected neighborhoods
+1. Choose a parameter from the drop down to display on the choropleth map. If "Health Risk Score" is selected, the user may choose at least two health indicators to be included in the computation of the composite health risk score.
+2. Choose a neighborhood from the drop down to display on the scatterplot map.
+3. Choose a 2nd neighborbood from the drop down to create bar charts comparing the 2 selected neighborhoods.
 
